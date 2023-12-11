@@ -115,9 +115,19 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">1</span>
+          <span class="site-state-item-count">2</span>
           <span class="site-state-item-name">日志</span>
         </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
 </div>
@@ -133,6 +143,236 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2023/12/12/Zookeeper%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Wang Fanming">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Duncan's Blog">
+      <meta itemprop="description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Duncan's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2023/12/12/Zookeeper%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">Zookeeper相关知识点总结</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2023-12-12 00:44:21 / 修改时间：00:56:03" itemprop="dateCreated datePublished" datetime="2023-12-12T00:44:21+08:00">2023-12-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE/" itemprop="url" rel="index"><span itemprop="name">大数据</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="Zookeeper"><a href="#Zookeeper" class="headerlink" title="Zookeeper"></a>Zookeeper</h1><h4 id="Zookeeper概述"><a href="#Zookeeper概述" class="headerlink" title="Zookeeper概述"></a>Zookeeper概述</h4><p>&emsp;&emsp;Zookeeper是一个<strong>分布式协调服务</strong>的开源框架。主要用来解决分布式集群中应用系统<br>的一致性问题，例如怎样避免同时操作同一数据造成脏读的问题。</p>
+<p>&emsp;&emsp;Zookeeper本质上是一个分布式的小文件系统。提供基于类似文件系统的<strong>目录树</strong>方式的数据<br>存储，并且可以对树中的节点进行有效管理。从而用来维护和监控<strong>储存的数据的状态的变化</strong>。通过监控<br>这些数据状态的变化，从而可以达到基于数据的集群管理。提供诸如：统一命名服务、分布式配置管理、分布式消息队列、<br>分布式锁、分布式协调等功能。</p>
+<p><strong>Zookeeper集群角色</strong></p>
+<ul>
+<li><p>Leader ： Zookeeper集群工作的核心，是集群的事务(写操作)请求的唯一调度和处理者，保证集群事务处理的顺序性。<br>  同时也是集群内部各个服务的调度者。</p>
+</li>
+<li><p>Follower：处理客户端的<strong>非事务</strong>请求，转发事务请求给Leader，参与集群Leader选举投票。</p>
+</li>
+<li><p>Observer：充当观察者角色，观察Zookeeper集群的最新状态变化并将这些状态同步过来，其对于非事务请求可以进行独立<br>处理，对于事务请求，则会转发给Leader，不会参与任何形式的投票，通常用于在不影响集群事务处理能力的前提下<br>提升集群的非事务处理能力。</p>
+</li>
+</ul>
+<p><strong>Zookeeper特性</strong></p>
+<ul>
+<li>全局一致性：每个server保存一份相同的数据副本，client无论连接到哪个server，展示的数据都是一致的。</li>
+<li>可靠性：如果消息被其中一台服务器接收，那么将被所有的服务器接收。</li>
+<li>顺序性：包括全局有序和偏序两种。</li>
+<li>数据更新原子性：一次数据更新要么成功，要么失败，不存在中间状态。</li>
+<li>实时性：Zookeeper保证客户端将在一个时间间隔范围内获得服务器的更新信息，或者服务器失效信息。</li>
+</ul>
+<blockquote>
+<p><strong>全局有序</strong>是指如果在一台服务器上消息 a 在消息 b 前发布，则在所有 Server 上消息 a<br>都将在消息 b 前被发布。</p>
+</blockquote>
+<blockquote>
+<p><strong>偏序</strong>是指如果一个消息 b 在消息 a 后被同一个发送者发布， a 必<br> 将排在 b 前面。</p>
+</blockquote>
+<hr>
+<h4 id="Zookeeper-shell"><a href="#Zookeeper-shell" class="headerlink" title="Zookeeper shell"></a>Zookeeper shell</h4><p>&emsp;&emsp;运行<code>zkCli.sh -server ip</code> 进入命令行工具。</p>
+<p>&emsp;&emsp;输入<code>help</code>,输出如下提示：</p>
+<p><img src="https://github.com/wangfanming/blog/blob/467eedb713de54c813589293a487504a59304a36/image/zookeeper_shell_help.bmp"></p>
+<p>带有<code>[watch]</code>的表示<br>1、shell基本操作</p>
+<p><strong>创建节点</strong>：</p>
+<p><code>create [-s] [-e] path data ac</code></p>
+<p>其中，<code>-s</code>或<code>-e</code>分别指定节点特性，顺序或临时节点，若不指定，则表示创建为持久节点，<code>acl</code>用来进行权限控制。</p>
+<p><strong>读取节点</strong>：</p>
+<p><code>ls path [watch]</code></p>
+<p><code>get path [watch]</code></p>
+<p><code>ls2 path [watch]</code></p>
+<p>&emsp;&emsp;与读相关的命令有<code>ls</code>命令和<code>get</code>命令，<code>ls</code>命令用来列出Zookeeper指定节点下的所有子节点，只能查看<br>指定节点下的<strong>第一级</strong>的所有子节点；<code>get</code>命令可以获取Zookeeper指定节点的数据内容和属性信息。</p>
+<p><strong>更新节点</strong></p>
+<p><code>set path [watch]</code></p>
+<p><code>data</code>就是要更新的内容，version表示数据版本。</p>
+<p><strong>删除节点</strong></p>
+<p><code>delete path [watch]</code></p>
+<p>若删除的节点存在子节点，那么无法删除节点，必须先删除子节点，再删除父节点。<br>也可以使用<code>rmr path</code>,递归强制删除。</p>
+<p><strong>对节点添加限制(弱限制)</strong></p>
+<p><code>setquota -|-b val path</code> 对节点增加限制。</p>
+<ul>
+<li><code>n</code>:表示子节点的最大个数。</li>
+<li><code>b</code>:表示数据值的最大长度。</li>
+<li><code>val</code>:子节点最大格式或数据值的最大长度。</li>
+<li><code>path</code>:节点路径。</li>
+</ul>
+<p><strong>其他命令</strong></p>
+<p><code>history</code>:列出命令历史<br><code>redo</code>:改命令可以重新执行指定命令Bain好的历史命令，通常结合<code>history</code>一起使用。</p>
+<hr>
+<h4 id="Zookeeper数据模型"><a href="#Zookeeper数据模型" class="headerlink" title="Zookeeper数据模型"></a>Zookeeper数据模型</h4><p>&emsp;&emsp;Zookeeper采用<strong>树形层次结构</strong>，每个节点被称为<code>Znode</code>。</p>
+<p>1、<code>Znode</code>节点的特性：</p>
+<ul>
+<li>Znode兼具文件和目录两种特点。既像文件一样维护着数据、元信息、ACL(访问权限列表)、时间戳等<br>  数据结构，又像目录一样可以作为路径标识的一部分，并可以具有子<code>Znode</code>。</li>
+<li>Znode具有原子性操作。</li>
+<li>Znode存储数据大小有限制。通常以<code>KB</code>为单位。</li>
+<li>Znode通过路径引用。<strong>路径必须是绝对的</strong>。</li>
+</ul>
+<p>每个Znode节点都是由3部分组成：</p>
+<ul>
+<li><code>stat</code>:此为状态信息，描述Znode的版本、权限等信息。</li>
+<li><code>data</code>:与该Znode关联的数据。</li>
+<li><code>children</code>:该Znode下的子节点。</li>
+</ul>
+<p>2、节点类型</p>
+<p>&emsp;&emsp;Znode有两种，分别是<strong>临时节点</strong>和<strong>永久节点</strong>。节点类型在创建时即被确定，且不能改变。</p>
+<p><strong>临时节点</strong>：该节点的生命周期依赖于创建它们的会话。会话一旦结束，临时节点就会被自动删除。临时节点不允许有子节点。<br><strong>永久节点</strong>：该节点的生命周期不依赖会话，并且只有在客户端显式删除时，它们才会被删除。</p>
+<p>Znode还有一个序列化的特性，如果创建的时候指定的话，该Znode的名字后面会自动追加一个不断增加的序列号。<br>用来记录每个子节点创建的先后顺序。格式：<code>%10d</code>(10位数字，不够用0补充)</p>
+<p>这样就存在了四种类型的<code>Znode</code>节点：</p>
+<ul>
+<li><code>PERSISTENT</code>:永久节点</li>
+<li><code>EPHEMERAL</code>:临时节点</li>
+<li><code>PERSISTENT_SEQUENTIAL</code>:永久、序列化节点</li>
+<li><code>EPHEMERAL_SEQUENTIAL</code>:临时、序列化节点</li>
+</ul>
+<p>3、节点属性</p>
+<p>&emsp;&emsp;每个Znode都包含了一系列的属性。</p>
+<ul>
+<li><code>dataVersion</code>:数据版本号。每次对数据的<code>set</code>操作都会使其自加1，可以有效避免数据更新时的先后顺序问题。</li>
+<li><code>cversion</code>:子节点的版本号。当<code>Znode</code>的子节点有变化时，其值都会加1。</li>
+<li><code>aclVersion</code>:ACL的版本号。</li>
+<li><code>cZid</code>:创建Znode的事务的ID。</li>
+<li><code>mZid</code>:Znode被修改的事务ID。</li>
+<li><code>ctime</code>:节点创建时的时间戳。</li>
+<li><code>mtime</code>:节点最新一次更新发生的时间。</li>
+<li><code>ephemeralOwner</code>:如果该节点为临时节点，其值表示与该节点绑定的session id，如果不是则为0。</li>
+</ul>
+<p>在client和server通信之前，首先需要建立连接，该连接称为session。连接建立后如果发生超时、授权失败，或显式的关闭连接，<br>连接便处于CLOSED状态，此时session结束。</p>
+<p>4、Zookeeper的Watch机制</p>
+<p>&emsp;&emsp;Watch说的是Zookeeper的监听机制。<strong>一个Watch事件是一个一次性的触发器</strong>，当被设置了Watch<br>的数据发生了改变的时候，则服务器将这一改变打送给设置了Watch的客户端，以便通知它们。</p>
+<p>&emsp;&emsp;改变有很多种方式，如：节点创建、节点删除、节点改变、子节点改变等。</p>
+<p><strong>Watch机制的特点</strong></p>
+<ul>
+<li>一次性触发。</li>
+<li>Watcher event异步发送。即watcher的通知事件从server到client是异步的。</li>
+<li>数据监视。<code>getdata()</code>、<code>exists()</code>设置了数据监视。<code>getchildren()</code>设置了子节点监视。</li>
+<li>注册watcher。<code>getData()</code>,<code>exists()</code>,<code>getchildren()</code></li>
+<li>触发watcher。<code>create()</code>,<code>delete()</code>,<code>setData()</code></li>
+</ul>
+<p>5、Watch的事件类型</p>
+<p>Zookeeper的watch实际上要处理两类事件。</p>
+<ul>
+<li>连接状态事件(type&#x3D;None,path&#x3D;null)</li>
+</ul>
+<p><code>None</code>:在客户端与Zookeeper集群中的服务器断开连接的时候，客户端会收到这个事件。</p>
+<ul>
+<li>节点事件</li>
+</ul>
+<p><code>NodeCreated</code>：Znode创建事件</p>
+<p><code>NodeDeleted</code>：Znode删除事件</p>
+<p><code>NodeDataChanged</code>：Znode数据内容更新事件。其实本质上该事件只关注dataVersion版本号，但是只要<br>调用了更新接口，<code>dataVersion</code>就会有变更。</p>
+<p><code>NodeChildrenChanged</code>：Znode子节点改变事件，只关注<strong>子节点的个数</strong>变更，子节点内容变更是不会通知的。</p>
+<hr>
+<h4 id="Zookeeper客户端API"><a href="#Zookeeper客户端API" class="headerlink" title="Zookeeper客户端API"></a>Zookeeper客户端API</h4><p>&emsp;&emsp;<code>org.apache.zookeeper.Zookeeper</code> 是客户端入口主类，负责建立与 server<br>的会话， 它供以下几类主要方法：</p>
+<ul>
+<li><code>create</code>:在本地目录树中创建一个节点。</li>
+<li><code>delete</code>:删除一个节点。</li>
+<li><code>exists</code>:测试本地是否存在目标节点。</li>
+<li><code>get/set data</code>:从目标节点上读取&#x2F;写 数据。</li>
+<li><code>getChildren</code>:检索一个子节点上的列表。</li>
+</ul>
+<p>基本使用与模板代码：<br>1、引入pom依赖：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.apache.zookeeper&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;zookeeper&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;3.4.9&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+
+<p>2、模板代码：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">public static void main(String[] args) throws Exception &#123;</span><br><span class="line">// 初始化 ZooKeeper 实例(zk 地址、会话超时时间，与系统默认一致、 watcher)</span><br><span class="line">ZooKeeper zk = new ZooKeeper(&quot;node-21:2181,node-22:2181&quot;, 30000, new Watcher() &#123;</span><br><span class="line">@Override</span><br><span class="line">public void process(WatchedEvent event) &#123;</span><br><span class="line">System.out.println(&quot;已经触发了&quot; + event.getType() + &quot;事件！ &quot;);</span><br><span class="line">&#125;</span><br><span class="line">&#125;);</span><br><span class="line">// 创建一个目录节点</span><br><span class="line">zk.create(&quot;/testRootPath&quot;, &quot;testRootData&quot;.getBytes(), Ids.OPEN_ACL_UNSAFE,</span><br><span class="line">CreateMode.PERSISTENT);</span><br><span class="line">// 创建一个子目录节点</span><br><span class="line">zk.create(&quot;/testRootPath/testChildPathOne&quot;, &quot;testChildDataOne&quot;.getBytes(),</span><br><span class="line">Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);</span><br><span class="line">System.out.println(new String(zk.getData(&quot;/testRootPath&quot;,false,null)));</span><br><span class="line">// 取出子目录节点列表</span><br><span class="line">System.out.println(zk.getChildren(&quot;/testRootPath&quot;,true));</span><br><span class="line">// 修改子目录节点数据</span><br><span class="line">zk.setData(&quot;/testRootPath/testChildPathOne&quot;,&quot;modifyChildDataOne&quot;.getBytes(),-1);</span><br><span class="line">System.out.println(&quot;目录节点状态： [&quot;+zk.exists(&quot;/testRootPath&quot;,true)+&quot;]&quot;);</span><br><span class="line">// 创建另外一个子目录节点</span><br><span class="line">zk.create(&quot;/testRootPath/testChildPathTwo&quot;, &quot;testChildDataTwo&quot;.getBytes(),</span><br><span class="line">Ids.OPEN_ACL_UNSAFE,CreateMode.PERSISTENT);</span><br><span class="line">System.out.println(new String(zk.getData(&quot;/testRootPath/testChildPathTwo&quot;,true,null)));</span><br><span class="line">// 删除子目录节点</span><br><span class="line">zk.delete(&quot;/testRootPath/testChildPathTwo&quot;,-1);</span><br><span class="line">zk.delete(&quot;/testRootPath/testChildPathOne&quot;,-1);</span><br><span class="line">// 删除父目录节点</span><br><span class="line">zk.delete(&quot;/testRootPath&quot;,-1);</span><br><span class="line">zk.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<hr>
+<h4 id="Zookeeper典型应用"><a href="#Zookeeper典型应用" class="headerlink" title="Zookeeper典型应用"></a>Zookeeper典型应用</h4><p>1、数据发布与订阅</p>
+<blockquote>
+<p>&emsp;&emsp;发布与订阅模型，即所谓的配置中心。发布者将数据发布到ZK节点上，供订阅者动态获取数据，<br>    实现配置信息的集中式管理和动态更新。</p>
+</blockquote>
+<p>   &emsp;&emsp;<strong>适合数据量很小的场景</strong>，这样数据更新可能会比较快。</p>
+<p>2、命名服务</p>
+<blockquote>
+<p>&emsp;&emsp;在分布式系统中，通过使用命名服务，客户端应用能够根据指定名字来获取资源或服务的地址，<br>提供者等信息。被命名的实体通常可以是集群中的机器，提供服务的地址，远程对象等等，这些都可以通称为名字(Name)。<br>通过ZK提供的创建节点的API，能够很容易地创建一个全局唯一的path，这个path就可以作为一个名称。</p>
+</blockquote>
+<p>阿里巴巴集团开源的分布式服务框架 Dubbo 中使用 ZooKeeper 来作为其命<br>名服务，维护全局的服务地址列表。</p>
+<p>3、分布式锁</p>
+<blockquote>
+<p>&emsp;&emsp;分布式锁，这个主要得益于Zookeeper保证了数据的强一致性。锁服务可以分为两类，一个是保持独占，另一个是控制时序。</p>
+</blockquote>
+<ul>
+<li><p>保持独占：就是所有试图来获取这个锁的客户端，最终只有一个可以成功获得这把锁。通常的做法是一个<code>Znode</code>看作是一把锁，通过<code>create znode</code>的方式实现。</p>
+</li>
+<li><p>控制时序：就是所有试图来获取这个锁的客户端，最终都是会被安排执行，只是有个全局时序。做法和上面基本类似，只是这里 &#x2F;distribute_lock 已经<br>预先存在，客户端在它下面创建临时有序节点（这个可以通过节点的属性控制：CreateMode.EPHEMERAL_SEQUENTIAL 来指定）。Zk 的父节点（&#x2F;distribute_lock）<br>维持一份 sequence,保证子节点创建的时序性，从而也形成了每个客户端的全局时序。</p>
+</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
