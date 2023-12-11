@@ -1,11 +1,12 @@
 ---
-title: Zookeeper概述
-date: 2017-05-26 12:12:57
-categories: 
+title: Zookeeper相关知识点总结 # 标题
+date: 2023-12-12 00:44:21 # 时间
+categories: # 分类
 - 大数据
-tags:
+tags: # 标签
 - 分布式
 ---
+
 # Zookeeper
 
 #### Zookeeper概述
