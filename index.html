@@ -115,13 +115,13 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">1</span>
+          <span class="site-state-item-count">2</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-count">2</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -356,6 +356,117 @@
 <li><p>控制时序：就是所有试图来获取这个锁的客户端，最终都是会被安排执行，只是有个全局时序。做法和上面基本类似，只是这里 &#x2F;distribute_lock 已经<br>预先存在，客户端在它下面创建临时有序节点（这个可以通过节点的属性控制：CreateMode.EPHEMERAL_SEQUENTIAL 来指定）。Zk 的父节点（&#x2F;distribute_lock）<br>维持一份 sequence,保证子节点创建的时序性，从而也形成了每个客户端的全局时序。</p>
 </li>
 </ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2019/03/26/Keepalived%E5%85%A5%E9%97%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Wang Fanming">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Duncan's Blog">
+      <meta itemprop="description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Duncan's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2019/03/26/Keepalived%E5%85%A5%E9%97%A8/" class="post-title-link" itemprop="url">Hello World</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-03-26 10:23:41" itemprop="dateCreated datePublished" datetime="2019-03-26T10:23:41+08:00">2019-03-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2023-12-12 01:29:45" itemprop="dateModified" datetime="2023-12-12T01:29:45+08:00">2023-12-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="keepalived入门"><a href="#keepalived入门" class="headerlink" title="keepalived入门"></a>keepalived入门</h1><h2 id="keepalived简介"><a href="#keepalived简介" class="headerlink" title="keepalived简介"></a>keepalived简介</h2><blockquote>
+<p>&emsp;&emsp;keepalived是集群管理中保证集群高可用的一个服务软件，用来防止单点故障。</p>
+</blockquote>
+<blockquote>
+<p>&emsp;&emsp;keepalived的作用是检测web服务器的状态，如果有一台web服务器死机，<br>或工作出现故障，keepalived将检测到，并将有故障的web服务器从系统中剔除，当web服务器<br>工作正常后，keepalived自动将web服务器加入到服务器集群中，这些工作全部自动完成，不需要<br>人工干涉，需要人工做的只是修复故障的web服务器。</p>
+</blockquote>
+<blockquote>
+<p>&emsp;&emsp;keepalived是以VRRP协议位实现基础的，VRRP全称 Virtual Router<br>Redundancy Protocol，即虚拟路由冗余协议。</p>
+</blockquote>
+<blockquote>
+<p>&emsp;&emsp;虚拟路由冗余协议，可以认为是实现路由器高可用的协议，即将N台提供相同<br>功能的路由器组成的一个路由器组，这个组里面有一个master和多个backup，master上面有一个对外提供服务<br>的VIP（Virtual IPAddress,虚拟IP地址，该路由器所在局域网内其他机器的默认路由为该VIP），<br>master会发组播，当backup收不到VRRP包时，就认为master宕掉了，这时就需要根据VRRP的优先级来<br>就可以保证路由器的高可用了。</p>
+</blockquote>
+<h3 id="keepalived核心内容"><a href="#keepalived核心内容" class="headerlink" title="keepalived核心内容"></a>keepalived核心内容</h3><blockquote>
+<p>&emsp;&emsp;keepalived主要有三个模块，分别是core、check和VRRP。core模块为<br>keepalived的核心，负责主进程的启动、维护以及全局配置文件的加载和解析。check负责健康检查<br>，包括常见的各种检查。VRRP模块是来实现VRRP协议的。</p>
+</blockquote>
+<p>初始状态：</p>
+<blockquote>
+</blockquote>
+<p><img src="https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/keep1.bmp"></p>
+<p>主机状态：</p>
+<blockquote>
+</blockquote>
+<p><img src="https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/keep2.bmp"></p>
+<p>主机恢复：</p>
+<blockquote>
+</blockquote>
+<p><img src="https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/keep3.bmp"></p>
 
       
     </div>
