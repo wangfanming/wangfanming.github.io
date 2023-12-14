@@ -21,14 +21,26 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: '21.4.0'
+    
+    - name: Cache node modules
+      # 设置包缓存目录，避免每次下载
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
 
-    - name: Install dependencies & Generate static files
+    - name: Install hexo dependencies
+      # 下载 hexo-cli 脚手架及相关安装包
       run: |
-        node -v
-        npm i -g hexo-cli
-        npm i
+        npm install -g hexo-cli
+        npm install
+
+    - name: Generate files
+      # 编译 markdown 文件
+      run: |
         hexo clean
-        hexo g
+        hexo generate
+
     - name: Deploy to Github Pages
       env:
         GIT_NAME: wangfanming
