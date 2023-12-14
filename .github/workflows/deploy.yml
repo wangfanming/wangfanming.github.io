@@ -3,7 +3,7 @@ name: Deployment
 
 on:
   push:
-    branches: [master]
+    branches: [hexo]
 
 jobs:
   hexo-deployment:
