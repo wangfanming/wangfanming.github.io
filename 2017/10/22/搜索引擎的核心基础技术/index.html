@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.loli.net/css?family=Noto+Serif+SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"www.wfanming.top","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="搜索引擎的核心基础技术Lucune 技术">
+<meta property="og:type" content="article">
+<meta property="og:title" content="搜索引擎的核心基础技术">
+<meta property="og:url" content="https://www.wfanming.top/2017/10/22/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E7%9A%84%E6%A0%B8%E5%BF%83%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF/index.html">
+<meta property="og:site_name" content="Duncan&#39;s Blog">
+<meta property="og:description" content="搜索引擎的核心基础技术Lucune 技术">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.wfanming.top/img/2017-09-09_093931.png">
+<meta property="og:image" content="https://www.wfanming.top/img/2017-09-09_110528.png">
+<meta property="og:image" content="https://www.wfanming.top/img/2017-09-09_105613.png">
+<meta property="og:image" content="https://www.wfanming.top/img/2017-09-09_110305.png">
+<meta property="og:image" content="https://www.wfanming.top/img/2017-09-09_143433.png">
+<meta property="og:image" content="https://www.wfanming.top/img/2017-09-09_143559.png">
+<meta property="og:image" content="https://www.wfanming.top/img/2017-09-09_143637.png">
+<meta property="og:image" content="https://www.wfanming.top/img/2017-09-09_152113.png">
+<meta property="og:image" content="https://www.wfanming.top/img/2017-09-09_152529.png">
+<meta property="article:published_time" content="2017-10-22T01:34:21.000Z">
+<meta property="article:modified_time" content="2023-12-11T17:51:02.557Z">
+<meta property="article:author" content="Wang Fanming">
+<meta property="article:tag" content="搜索引擎">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.wfanming.top/img/2017-09-09_093931.png">
+
+
+<link rel="canonical" href="https://www.wfanming.top/2017/10/22/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E7%9A%84%E6%A0%B8%E5%BF%83%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://www.wfanming.top/2017/10/22/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E7%9A%84%E6%A0%B8%E5%BF%83%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF/","path":"2017/10/22/搜索引擎的核心基础技术/","title":"搜索引擎的核心基础技术"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>搜索引擎的核心基础技术 | Duncan's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Duncan's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习 分享生活 品味人生</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-schedule"><a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-commonweal"><a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E7%9A%84%E6%A0%B8%E5%BF%83%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF"><span class="nav-number">1.</span> <span class="nav-text">搜索引擎的核心基础技术</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Lucune-%E6%8A%80%E6%9C%AF"><span class="nav-number">1.0.1.</span> <span class="nav-text">Lucune 技术</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#4%E3%80%81lucene%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8"><span class="nav-number">2.</span> <span class="nav-text">4、lucene快速入门</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#4-1%E3%80%81%E5%88%9B%E5%BB%BA%E7%B4%A2%E5%BC%95%E7%9A%84%E8%BF%87%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">4.1、创建索引的过程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#4-2%E3%80%81%E4%BD%BF%E7%94%A8luke%E5%B7%A5%E5%85%B7%E6%9F%A5%E7%9C%8B%E7%B4%A2%E5%BC%95%E5%BA%93"><span class="nav-number">4.</span> <span class="nav-text">4.2、使用luke工具查看索引库</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#4-3%E3%80%81%E6%9F%A5%E8%AF%A2%E7%B4%A2%E5%BC%95%E7%9A%84%E8%BF%87%E7%A8%8B"><span class="nav-number">5.</span> <span class="nav-text">4.3、查询索引的过程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#6%E3%80%81lucene%E7%9A%84%E8%8A%B1%E5%BC%8F%E6%9F%A5%E8%AF%A2"><span class="nav-number">6.</span> <span class="nav-text">6、lucene的花式查询</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#7%E3%80%81%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8lucene%E5%BC%80%E5%8F%91%E4%B8%80%E4%B8%AA%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E"><span class="nav-number">7.</span> <span class="nav-text">7、如何使用lucene开发一个搜索引擎</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Wang Fanming</p>
+  <div class="site-description" itemprop="description">吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2017/10/22/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E7%9A%84%E6%A0%B8%E5%BF%83%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Wang Fanming">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Duncan's Blog">
+      <meta itemprop="description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="搜索引擎的核心基础技术 | Duncan's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          搜索引擎的核心基础技术
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2017-10-22 09:34:21" itemprop="dateCreated datePublished" datetime="2017-10-22T09:34:21+08:00">2017-10-22</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2023-12-12 01:51:02" itemprop="dateModified" datetime="2023-12-12T01:51:02+08:00">2023-12-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>6 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="搜索引擎的核心基础技术"><a href="#搜索引擎的核心基础技术" class="headerlink" title="搜索引擎的核心基础技术"></a>搜索引擎的核心基础技术</h1><h3 id="Lucune-技术"><a href="#Lucune-技术" class="headerlink" title="Lucune 技术"></a>Lucune 技术</h3><span id="more"></span>
+
+<ol>
+<li><p>用户搜索的过程</p>
+<ul>
+<li>用户输入关键词</li>
+</ul>
+<ul>
+<li>——–搜索过程——–</li>
+<li>展示结果</li>
+</ul>
+</li>
+<li><p>搜索相关技术</p>
+<ul>
+<li>lucene是什么？<ul>
+<li>lucene是一个用来构建搜索引擎的类库，并不是一个完整的搜索引擎。</li>
+<li>lucene核心功能：创建索引和查询索引</li>
+</ul>
+</li>
+<li>solr是什么？<ul>
+<li>是一个完整的搜索引擎，是基于lucene。</li>
+<li><a target="_blank" rel="noopener" href="http://lucene.apache.org/">官网地址</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>搜索的过程</p>
+</li>
+</ol>
+<ul>
+<li>在mysql数据库进行数据查询–mysql<ul>
+<li>去哪里查？  mysql</li>
+<li>怎么查询快一点？ select * from 表 where title like “%关键词%”；</li>
+<li><strong>在海量数据下放弃数据库的查询技术</strong></li>
+</ul>
+</li>
+<li>lucene的快速查询<ul>
+<li>能够通过lucene的索引库实现海量数据的快速查询。</li>
+<li>核心功能：创建索引、查询索引<ul>
+<li>创建索引时，需要将数据读取之后进行分词。<strong>分词技术</strong></li>
+</ul>
+</li>
+<li>lucene使用一个技术，叫做倒排索引，能够加快查询。<ul>
+<li>什么是倒排索引</li>
+<li>顺序查找的过程是 如果有一个万个文档，依次打开每个文档，然后逐行查询。</li>
+<li>倒排索引时，<strong>通过提前计算，将一个关键词出现在哪些文档中，记录下来成为索引数据</strong>，查询的时候，去索引数据中查找。</li>
+<li>举例</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">document1</span><br><span class="line">我爱我的祖国，我的祖国很强大。</span><br><span class="line">document2</span><br><span class="line">我爱你祖国，祖国我爱你。</span><br><span class="line">document3</span><br><span class="line">爱我中华，为中华之崛起而编写爬虫。</span><br></pre></td></tr></table></figure>
+<p>需求1：查找出现过“祖国”两个子的文档，并显示出来。<br>顺序查找：<br>readfile1-&gt;readline-&gt;find keyword<br>readfile2-&gt;readline-&gt;find keyword<br>……<br>倒排索引：提前创建索引<br>使用<strong>分词技术</strong>，将读取的一行句子分词。	</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">我|爱|我的|祖国|我的|祖国|很|强大</span><br><span class="line">我爱你|祖国|祖国|我爱你</span><br><span class="line">爱|我|中华|为|中华|之|崛起|而|编写|爬虫</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">我：&#123;document1[1:1],document3[1:2]&#125;</span><br><span class="line">爱：&#123;docuemnt1[1:2],document3[1:1]&#125;</span><br><span class="line">我的：&#123;document1[1:3,1:5]&#125;</span><br><span class="line">祖国：&#123;document1[1:4,1:6],document2[1:2,1:3]&#125;</span><br></pre></td></tr></table></figure>
+<p>使用倒排技术进行查询<br>1，先通过关键词找到对应的索引数据</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">祖国：&#123;document1[1:4,1:6],document2[1:2,1:3]&#125;</span><br></pre></td></tr></table></figure>
+<p>2,根据索引数据拼装response返回结果集<br>3，展示给用户结果<br><img src="/img/2017-09-09_093931.png"></p>
+<h1 id="4、lucene快速入门"><a href="#4、lucene快速入门" class="headerlink" title="4、lucene快速入门"></a>4、lucene快速入门</h1><ul>
+<li>创建maven项目导入lucene的pom依赖<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">&lt;dependencies&gt;</span><br><span class="line">	   &lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.apache.lucene&lt;/groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;lucene-core&lt;/artifactId&gt;</span><br><span class="line">		&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">	&lt;/dependency&gt;</span><br><span class="line">	&lt;!-- 查询索引的一些包 --&gt;</span><br><span class="line">	&lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.apache.lucene&lt;/groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;lucene-queries&lt;/artifactId&gt;</span><br><span class="line">		&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">	&lt;/dependency&gt;</span><br><span class="line">	&lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.apache.lucene&lt;/groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;lucene-test-framework&lt;/artifactId&gt;</span><br><span class="line">		&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">	&lt;/dependency&gt;</span><br><span class="line">	&lt;!-- 创建索引时，需要创建倒排索引信息，创建倒排需要分词 --&gt;</span><br><span class="line">	&lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.apache.lucene&lt;/groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;lucene-analyzers-common&lt;/artifactId&gt;</span><br><span class="line">		&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">	&lt;/dependency&gt;</span><br><span class="line">	&lt;!--  如果用户的输入的关键词是个组合词，或者一个句子：为什么打雷不下雨？ --&gt;</span><br><span class="line">	&lt;!-- 用来解析用户的查询意图 --&gt;</span><br><span class="line">	&lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.apache.lucene&lt;/groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;lucene-queryparser&lt;/artifactId&gt;</span><br><span class="line">		&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">	&lt;/dependency&gt;</span><br><span class="line"> &lt;/dependencies&gt;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h1 id="4-1、创建索引的过程"><a href="#4-1、创建索引的过程" class="headerlink" title="4.1、创建索引的过程"></a>4.1、创建索引的过程</h1><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LuceneMain</span> &#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">		<span class="comment">// 需求:使用lucene创建索引</span></span><br><span class="line">		<span class="comment">// 1.使用某种技术</span></span><br><span class="line">		<span class="comment">// document---&gt;分词---&gt;倒排---&gt;写入到索引库----介质(硬盘或者内存)</span></span><br><span class="line"></span><br><span class="line">		<span class="type">Directory</span> <span class="variable">d</span> <span class="operator">=</span> FSDirectory.open(<span class="keyword">new</span> <span class="title class_">File</span>(<span class="string">&quot;index&quot;</span>));</span><br><span class="line">		<span class="type">IndexWriterConfig</span> <span class="variable">conf</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">IndexWriterConfig</span>(Version.LATEST, <span class="keyword">new</span> <span class="title class_">StandardAnalyzer</span>());</span><br><span class="line">		<span class="comment">// 第一步:创建indexWriter，传入两个参数，一个directory(FSDriectory,RAMDriectory);一个是IndexWriterConfig</span></span><br><span class="line">		<span class="comment">// IndexWriterConfig,传入两个参数，一个是版本号，一个分词器(中文分词器在3.1时过期了，推荐使用标准StandardAnalyzer)</span></span><br><span class="line">		<span class="type">IndexWriter</span> <span class="variable">indexWriter</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">IndexWriter</span>(d, conf);</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 第二步:对文件创建索引----虎嗅网站：id,title,author,createTime,content,url</span></span><br><span class="line">		<span class="comment">// 一个文档中，有很多字段，想通过title进行查询，这个字段需要被indexed。</span></span><br><span class="line">		<span class="comment">// 如果一个想创建索引，有两种选择，一种不被分词就是完全匹配，一种是分词。</span></span><br><span class="line">		<span class="type">Document</span> <span class="variable">document</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Document</span>();</span><br><span class="line">		<span class="comment">// StringField 不分词</span></span><br><span class="line">		document.add(<span class="keyword">new</span> <span class="title class_">StringField</span>(<span class="string">&quot;id&quot;</span>, <span class="string">&quot;100010&quot;</span>, Store.YES));</span><br><span class="line">		<span class="comment">// TextField 分词</span></span><br><span class="line">		document.add(<span class="keyword">new</span> <span class="title class_">TextField</span>(<span class="string">&quot;title&quot;</span>, <span class="string">&quot;《跑男》《极限挑战3》相继停播，政策已成为今年综艺的最大风险&quot;</span>, Store.YES));</span><br><span class="line">		<span class="comment">// StringField 不分词</span></span><br><span class="line">		document.add(<span class="keyword">new</span> <span class="title class_">StringField</span>(<span class="string">&quot;author&quot;</span>, <span class="string">&quot;文娱商业观察&quot;</span>, Store.YES));</span><br><span class="line">		<span class="comment">// StringField 不分词</span></span><br><span class="line">		document.add(<span class="keyword">new</span> <span class="title class_">StringField</span>(<span class="string">&quot;createTime&quot;</span>, <span class="string">&quot;100010&quot;</span>, Store.YES));</span><br><span class="line">		<span class="comment">// TextField 分词</span></span><br><span class="line">		document.add(<span class="keyword">new</span> <span class="title class_">TextField</span>(<span class="string">&quot;content&quot;</span>,</span><br><span class="line">				<span class="string">&quot;虽然安全播了三季，但每年都要被停播个那么几周。果不其然，这周日《极限挑战》又要停播，联系前段时间东方卫视《金星秀》《今晚80后脱口秀》宣布停播，这次《极限挑战》的停播是在警示谁？&quot;</span>,</span><br><span class="line">				Store.YES));</span><br><span class="line">		<span class="comment">// StringField 不分词</span></span><br><span class="line">		document.add(<span class="keyword">new</span> <span class="title class_">StringField</span>(<span class="string">&quot;url&quot;</span>, <span class="string">&quot;https://www.huxiu.com/article/213893.html&quot;</span>, Store.YES));</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 第三步：使用indexWriter创建索引</span></span><br><span class="line">		indexWriter.addDocument(document);</span><br><span class="line">		<span class="comment">// commit将内存中等待的数据提交到硬盘创建索引。</span></span><br><span class="line">		indexWriter.commit();</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 第四步：关闭indexwriter</span></span><br><span class="line">		indexWriter.close();</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/img/2017-09-09_110528.png"></p>
+<h1 id="4-2、使用luke工具查看索引库"><a href="#4-2、使用luke工具查看索引库" class="headerlink" title="4.2、使用luke工具查看索引库"></a>4.2、使用luke工具查看索引库</h1><ul>
+<li>分析出lucene索引库会存储两种类型的数据<ul>
+<li>保存索引数据</li>
+<li>保存原始数据<br>  <img src="/img/2017-09-09_105613.png"><br>  <img src="/img/2017-09-09_110305.png"></li>
+</ul>
+</li>
+</ul>
+<h1 id="4-3、查询索引的过程"><a href="#4-3、查询索引的过程" class="headerlink" title="4.3、查询索引的过程"></a>4.3、查询索引的过程</h1><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">private static void searchIndex() throws IOException &#123;</span><br><span class="line">		//需求:使用lucene查询索引</span><br><span class="line">		FSDirectory directory = FSDirectory.open(new File(&quot;index&quot;));</span><br><span class="line">		// 第一步:创建IndexSearcher，IndexSearcher 是基于索引库进行查询 ，需要先读取索引库。</span><br><span class="line">		IndexSearcher indexSearcher = new IndexSearcher(DirectoryReader.open(directory));</span><br><span class="line">		// 第二步：设置用户的关键词</span><br><span class="line">		String keyword = &quot;文娱商业观察&quot;;</span><br><span class="line">		// 第三步：根据词条进行查询</span><br><span class="line">		// 将关键词转换成一个term对象，需要指定关键词要查询字段 new Term(&quot;author&quot;, keyword)</span><br><span class="line">		TopDocs res = indexSearcher.search(new TermQuery(new Term(&quot;author&quot;, keyword)), Integer.MAX_VALUE);</span><br><span class="line">		// 第四步：从topdocs中获取数据</span><br><span class="line">		System.out.println(&quot;当前查询命中多少天数据:&quot;+res.totalHits);</span><br><span class="line">		ScoreDoc[] scoreDocs = res.scoreDocs;</span><br><span class="line">		for (ScoreDoc scoreDoc : scoreDocs) &#123;</span><br><span class="line">			System.out.println(&quot;维护在lucene内部的文档编号:&quot;+scoreDoc.doc);</span><br><span class="line">			System.out.println(&quot;当前文档的得分:&quot;+scoreDoc.score);</span><br><span class="line">			//第五步:获取单篇文章的信息</span><br><span class="line">			Document doc = indexSearcher.doc(scoreDoc.doc);</span><br><span class="line">			System.out.println(&quot;id:   &quot;+doc.get(&quot;id&quot;));</span><br><span class="line">			System.out.println(&quot;title:   &quot;+doc.get(&quot;title&quot;));</span><br><span class="line">			System.out.println(&quot;author:   &quot;+doc.get(&quot;author&quot;));</span><br><span class="line">			System.out.println(&quot;createTime:   &quot;+doc.get(&quot;createTime&quot;));</span><br><span class="line">			System.out.println(&quot;content:   &quot;+doc.get(&quot;content&quot;));</span><br><span class="line">			System.out.println(&quot;url:   &quot;+doc.get(&quot;url&quot;));</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>如何知道一次搜索过程中，哪些文档相关性更强？<ul>
+<li>10个文件，都包含关键词 “传智播客”</li>
+<li>每篇文章中关键词都会出现？<ul>
+<li>出现的次数比较多的，相关性比较大。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>#5、在项目中使用ikanalyzer分词器</p>
+<ul>
+<li>是什么？ <a target="_blank" rel="noopener" href="https://www.oschina.net/question/28_61577">中国林良益 2012版本之后 在阿里</a></li>
+<li>maven项目，2012年发布jar，没有发布到maven。<ul>
+<li>需要将jar包导入到本地mvn仓库<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">mvn install:install-file -Dfile=IKAnalyzer2012FF_u1.jar -DgroupId=org.wltea.ik-analyzer -DartifactId=ik-analyzer -Dversion=4.10.2 -Dpackaging=jar </span><br></pre></td></tr></table></figure>
+<img src="/img/2017-09-09_143433.png"></li>
+</ul>
+</li>
+<li>在项目中使用<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">	&lt;groupId&gt;org.wltea.ik-analyzer&lt;/groupId&gt;</span><br><span class="line">	&lt;artifactId&gt;ik-analyzer&lt;/artifactId&gt;</span><br><span class="line">	&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure></li>
+<li>使用自己的词库<br><img src="/img/2017-09-09_143559.png"><br><img src="/img/2017-09-09_143637.png"></li>
+<li>ik分词器和lucene的关系<ul>
+<li>ik是一个独立的分词器<br>  <img src="/img/2017-09-09_152113.png"></li>
+<li>由于lucene的查询功能底层使用了倒排索引的技术，而倒排索引需要对内容进行分词，才使用了分词技术。</li>
+</ul>
+</li>
+</ul>
+<h1 id="6、lucene的花式查询"><a href="#6、lucene的花式查询" class="headerlink" title="6、lucene的花式查询"></a>6、lucene的花式查询</h1><p><img src="/img/2017-09-09_152529.png"></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">// TermQuery query = new TermQuery(new Term(&quot;content&quot;, &quot;战&quot;));</span><br><span class="line"></span><br><span class="line">//// 通过两次置换，能够得到一个词条</span><br><span class="line"> Term term = new Term(&quot;content&quot;,&quot;大据数&quot;);</span><br><span class="line"> FuzzyQuery query = new FuzzyQuery(term);</span><br><span class="line"></span><br><span class="line">//通过前缀查询</span><br><span class="line">PrefixQuery query = new PrefixQuery(new Term(&quot;content&quot;, &quot;大&quot;));</span><br><span class="line"></span><br><span class="line">WildcardQuery query = new WildcardQuery(new Term(&quot;content&quot;,&quot;大*&quot;));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">BooleanQuery query = new BooleanQuery();</span><br><span class="line"></span><br><span class="line">WildcardQuery wildcardQuery = new WildcardQuery(new Term(&quot;content&quot;, &quot;大*&quot;));</span><br><span class="line">query.add(wildcardQuery, Occur.MUST);</span><br><span class="line"></span><br><span class="line">PrefixQuery prefixQuery = new PrefixQuery(new Term(&quot;content&quot;, &quot;金&quot;));</span><br><span class="line">query.add(prefixQuery, Occur.MUST);</span><br><span class="line"></span><br><span class="line">//重要：在大多数情况下，用户的输入不一定是一个词条，</span><br><span class="line">//所以我们需要对用户的输入进行分词，将输入编程多个词条之后进行查询。</span><br><span class="line">Analyzer analyzer = new IKAnalyzer();</span><br><span class="line">QueryParser queryParser = new QueryParser(&quot;content&quot;, analyzer);</span><br><span class="line">Query query =queryParser.parse(&quot;学习大数据&quot;);</span><br><span class="line"></span><br><span class="line">//重要：有时候业务会提供多个字段供用户选择，店铺，商家，旺旺。</span><br><span class="line">MultiFieldQueryParser multiFieldQueryParser </span><br><span class="line">= new MultiFieldQueryParser(new String[]&#123;&quot;title&quot;,&quot;content&quot;&#125;,new IKAnalyzer());</span><br><span class="line">Query query =multiFieldQueryParser.parse(&quot;学习大数据&quot;);</span><br></pre></td></tr></table></figure>
+
+<h1 id="7、如何使用lucene开发一个搜索引擎"><a href="#7、如何使用lucene开发一个搜索引擎" class="headerlink" title="7、如何使用lucene开发一个搜索引擎"></a>7、如何使用lucene开发一个搜索引擎</h1><ul>
+<li>对外开发一个controller，这个controller提供两个方法<ul>
+<li>init:读取数据库的数据，创建索引<ul>
+<li>———dao————-</li>
+<li>mysql jdbc DataSource</li>
+<li>jdbctemplate mybatis访问</li>
+<li>select * from huxiu_article;</li>
+<li>———-service———–</li>
+<li>得到数据库查询的结果，并封装到list集合当中</li>
+<li>迭代list中的元素，将每个元素封装一个document对象<ul>
+<li>调用indexWriter.add(doc)创建索引</li>
+<li>调用indexWriter.commit()</li>
+</ul>
+</li>
+<li>关闭indexWriter.close()</li>
+</ul>
+</li>
+<li>query:查询方法，主要接受用户输入的关键字。<ul>
+<li>——–controller———</li>
+<li>获取数据</li>
+<li>————service——–</li>
+<li>将用户的关键词封装成一个query对象<ul>
+<li>使用QueryParser对用户输入的关键词进行分词</li>
+<li>indexSearcher.search(query,integer.max)</li>
+</ul>
+</li>
+<li>得到索引库的返回值，封装成一个list对象。</li>
+<li>返回list对象给页面</li>
+<li>页面通过jstl等等技术，进行展现。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>​		</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer"><div>
+  <div class="end-slogan" style="text-align:center;font-size:22px;letter-spacing:10px;user-seclect:none;color:#bbb">----------- 本文结束啦<i class="fa fa-star"></i>感谢您阅读-----------</div>		
+</div>
+
+
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Wang Fanming
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://www.wfanming.top/2017/10/22/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E7%9A%84%E6%A0%B8%E5%BF%83%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF/" title="搜索引擎的核心基础技术">https://www.wfanming.top/2017/10/22/搜索引擎的核心基础技术/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/" rel="tag"># 搜索引擎</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/05/12/%E5%85%B3%E4%BA%8EJavaWEB%E9%A1%B9%E7%9B%AE%E4%B8%AD%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/" rel="prev" title="Java WEB项目中中文乱码">
+                  <i class="fa fa-angle-left"></i> Java WEB项目中中文乱码
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/04/12/%E7%BD%91%E7%AB%99%E6%B5%81%E9%87%8F%E6%97%A5%E5%BF%97%E6%95%B0%E6%8D%AE%E8%87%AA%E5%AE%9A%E4%B9%89%E9%87%87%E9%9B%86(%E5%9F%8B%E7%82%B9)/" rel="next" title="网站流量日志数据自定义采集">
+                  网站流量日志数据自定义采集 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Wang Fanming</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">36k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">33 分钟</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+<br /> #换行
+<!-- 网站运行时间的设置 -->
+<span id="timeDate">载入天数...</span>
+<span id="times">载入时分秒...</span>
+<script>
+    var now = new Date();
+    function createtime() {
+        var grt= new Date("04/21/2019 15:54:40");//此处修改你的建站时间或者网站上线时间
+        now.setTime(now.getTime()+250);
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days);
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours);
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum);
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;}
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum);
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;}
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 ";
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒";
+    }
+setInterval("createtime()",250);
+</script>
+
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>

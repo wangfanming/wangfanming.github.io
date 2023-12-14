@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.loli.net/css?family=Noto+Serif+SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"www.wfanming.top","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Java WEB项目中中文乱码的解决方法 例子如下表单： &lt;form action&#x3D;&quot;$&#123;pageContext.request.contextPath&#125;&#x2F;UserServlet&quot; method&#x3D;&quot;post&quot;&gt;    姓名：&lt;input type&#x3D;&quot;text&quot; name&#x3D;&quot;name&amp;quot">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java WEB项目中中文乱码">
+<meta property="og:url" content="https://www.wfanming.top/2017/05/12/%E5%85%B3%E4%BA%8EJavaWEB%E9%A1%B9%E7%9B%AE%E4%B8%AD%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/index.html">
+<meta property="og:site_name" content="Duncan&#39;s Blog">
+<meta property="og:description" content="Java WEB项目中中文乱码的解决方法 例子如下表单： &lt;form action&#x3D;&quot;$&#123;pageContext.request.contextPath&#125;&#x2F;UserServlet&quot; method&#x3D;&quot;post&quot;&gt;    姓名：&lt;input type&#x3D;&quot;text&quot; name&#x3D;&quot;name&amp;quot">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2017-05-12T08:44:33.000Z">
+<meta property="article:modified_time" content="2023-12-11T17:57:40.877Z">
+<meta property="article:author" content="Wang Fanming">
+<meta property="article:tag" content="中文乱码">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://www.wfanming.top/2017/05/12/%E5%85%B3%E4%BA%8EJavaWEB%E9%A1%B9%E7%9B%AE%E4%B8%AD%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://www.wfanming.top/2017/05/12/%E5%85%B3%E4%BA%8EJavaWEB%E9%A1%B9%E7%9B%AE%E4%B8%AD%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/","path":"2017/05/12/关于JavaWEB项目中中文乱码的解决方法/","title":"Java WEB项目中中文乱码"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Java WEB项目中中文乱码 | Duncan's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Duncan's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">记录学习 分享生活 品味人生</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-schedule"><a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-commonweal"><a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Java-WEB%E9%A1%B9%E7%9B%AE%E4%B8%AD%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">1.</span> <span class="nav-text">Java WEB项目中中文乱码的解决方法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%8B%E5%AD%90"><span class="nav-number">1.1.</span> <span class="nav-text">例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E6%96%B9%E6%A1%88%E5%8F%AF%E6%A0%B9%E6%8D%AE%E8%AF%B7%E6%B1%82%E7%9A%84%E7%B1%BB%E5%9E%8B%E5%88%86%E4%B8%BA%E4%B8%A4%E7%B1%BB"><span class="nav-number">1.2.</span> <span class="nav-text">处理方案可根据请求的类型分为两类:</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8%E4%B8%80%E4%B8%AAweb%E9%A1%B9%E7%9B%AE%E4%B8%AD%EF%BC%8C%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.2.1.</span> <span class="nav-text">在一个web项目中，中文乱码的解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%88%91%E8%AE%A4%E4%B8%BA%E6%9C%80%E4%BD%B3%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E5%B0%B1%E6%98%AF%E4%BD%BF%E7%94%A8%E8%BF%87%E6%BB%A4%E5%99%A8%EF%BC%8C%E6%8B%A6%E6%88%AA%E6%89%80%E6%9C%89%E5%8C%85%E5%90%AB%E6%9C%89%E4%B8%AD%E6%96%87%E7%9A%84%E8%AF%B7%E6%B1%82%E6%95%B0%E6%8D%AE%EF%BC%8C%E8%BD%AC%E7%A0%81%E5%90%8E%E5%86%8D%E4%BC%A0%E9%80%92%E7%BB%99%E8%AF%B7%E6%B1%82%E7%9A%84%E7%9B%AE%E6%A0%87%E5%9C%B0%E5%9D%80%E3%80%82"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">我认为最佳解决方案就是使用过滤器，拦截所有包含有中文的请求数据，转码后再传递给请求的目标地址。</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%AF%B9%E6%89%80%E6%9C%89%E7%9A%84servlet%E8%BF%9B%E8%A1%8C%E8%AF%B7%E6%B1%82%E7%9A%84%E8%BF%87%E6%BB%A4%EF%BC%9F"><span class="nav-number">1.3.</span> <span class="nav-text">如何对所有的servlet进行请求的过滤？</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Wang Fanming</p>
+  <div class="site-description" itemprop="description">吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2017/05/12/%E5%85%B3%E4%BA%8EJavaWEB%E9%A1%B9%E7%9B%AE%E4%B8%AD%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Wang Fanming">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Duncan's Blog">
+      <meta itemprop="description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Java WEB项目中中文乱码 | Duncan's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Java WEB项目中中文乱码
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2017-05-12 16:44:33" itemprop="dateCreated datePublished" datetime="2017-05-12T16:44:33+08:00">2017-05-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2023-12-12 01:57:40" itemprop="dateModified" datetime="2023-12-12T01:57:40+08:00">2023-12-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>5.3k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>5 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="Java-WEB项目中中文乱码的解决方法"><a href="#Java-WEB项目中中文乱码的解决方法" class="headerlink" title="Java WEB项目中中文乱码的解决方法"></a>Java WEB项目中中文乱码的解决方法</h1><hr>
+<h2 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h2><p>如下表单：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">&lt;form action=&quot;$&#123;pageContext.request.contextPath&#125;/UserServlet&quot; method=&quot;post&quot;&gt;</span><br><span class="line">    姓名：&lt;input type=&quot;text&quot; name=&quot;name&quot;&gt;</span><br><span class="line">    &lt;input type=&quot;submit&quot; value=&quot;提交&quot;&gt;</span><br><span class="line">&lt;/form&gt;    </span><br></pre></td></tr></table></figure>
+<p>在这个表单中如果‘姓名’为中文，提交至web后端进行获取，如：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">name = request.getParameter(&quot;name&quot;);</span><br></pre></td></tr></table></figure>
+<p>此时获取到的name的值一定是乱码，此时就要进行中文乱码处理了。</p>
+<h2 id="处理方案可根据请求的类型分为两类"><a href="#处理方案可根据请求的类型分为两类" class="headerlink" title="处理方案可根据请求的类型分为两类:"></a>处理方案可根据请求的类型分为两类:</h2><p><strong>POST请求</strong>：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">request.setCharacterEncoding(&quot;UTF-8&quot;);//在接收请求参数之前，将request的缓冲区字符集设置为UTF-8</span><br><span class="line">request.getParameter(&quot;name&quot;);//此时再获取表单中的中文数据就不会乱码了</span><br></pre></td></tr></table></figure>
+<p><strong>GET请求</strong></p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">String param = reques.getParameter(&quot;name&quot;);//首先获取表单数据</span><br><span class="line">String name = new String(param.getBytes(&quot;ISO-8859-1&quot;),&quot;UTF-8&quot;);//将获取到的表单数据以ISO-8859-1字符集转成字节数组，再按照UTF-8字符集编码成新的字符串，即可解决中文乱码</span><br></pre></td></tr></table></figure>
+
+<p><strong>重点：</strong><br>    表单数据之所以乱码，是因为字符集不匹配，导致的，在Post请求时，我们在获取请求参数之前，将request缓冲区的字符集设置成UTF-8，即可在表单数据发送过来时，将表单数据按照UTF-8的编码放入缓冲区，在取出来时，自然就已经不会乱码了。在get请求时较为繁琐。需要首先将表单数据以ISO-8859-1字符集转成字节数组，因为request缓冲区的默认字符集是ISO-8859-1,所以以该字符集来将乱码数据转换成字节数组，不会丢失字节，从而保证了表单数据的完整性，进而以UTF-8字符集构造成新的字符串，将中文读出。<br>    但是如果需要将中文数据在页面展示，还需要：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">response.setContentType(&quot;text/html;charset=UTF-8&quot;);//向浏览器指明要以UTF-8字符集解析返回的数据</span><br></pre></td></tr></table></figure>
+
+<p><em><strong>以上是针对单个网页的中文乱码解决方法</strong></em></p>
+<span id="more"></span>
+
+<h3 id="在一个web项目中，中文乱码的解决方案"><a href="#在一个web项目中，中文乱码的解决方案" class="headerlink" title="在一个web项目中，中文乱码的解决方案"></a>在一个web项目中，中文乱码的解决方案</h3><h4 id="我认为最佳解决方案就是使用过滤器，拦截所有包含有中文的请求数据，转码后再传递给请求的目标地址。"><a href="#我认为最佳解决方案就是使用过滤器，拦截所有包含有中文的请求数据，转码后再传递给请求的目标地址。" class="headerlink" title="我认为最佳解决方案就是使用过滤器，拦截所有包含有中文的请求数据，转码后再传递给请求的目标地址。"></a>我认为最佳解决方案就是使用过滤器，拦截所有包含有中文的请求数据，转码后再传递给请求的目标地址。</h4><p>依旧以上述表单数据的中文乱码为例：<br>Filter代码如下：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">public class GenericEncodingFilter implements Filter &#123;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void destroy() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void doFilter(ServletRequest request, ServletResponse response,</span><br><span class="line">            FilterChain chain) throws IOException, ServletException &#123;</span><br><span class="line">        // 转型为与协议相关对象</span><br><span class="line">        HttpServletRequest httpServletRequest = (HttpServletRequest) request;</span><br><span class="line">        // 对request包装增强</span><br><span class="line">        HttpServletRequest myrequest = new MyRequest(httpServletRequest);</span><br><span class="line">        chain.doFilter(myrequest, response);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void init(FilterConfig filterConfig) throws ServletException &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在上述代码中，我们思考到，之所以在获取表单数据时，拿到的中文都是乱码，是因为request对象本身并不具备对中乱码的解决能力，因此，我们想到以装饰者模式对request进行增强。(当然也可以使用动态代理来解决)<br><strong>关于装饰者模式的注意点：</strong></p>
+<ol>
+<li>增强的类要和被增强的类实现同一个接口 </li>
+<li>增强的类需要传入一个被增强类的引用</li>
+</ol>
+<p>以下是增强HttpServletRequest对象的实现：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">// 自定义request对象</span><br><span class="line">class MyRequest extends HttpServletRequestWrapper &#123;</span><br><span class="line"></span><br><span class="line">    private HttpServletRequest request;</span><br><span class="line"></span><br><span class="line">    private boolean hasEncode;</span><br><span class="line"></span><br><span class="line">    public MyRequest(HttpServletRequest request) &#123;//此处传入了request的引用</span><br><span class="line">        super(request);// super必须写</span><br><span class="line">        this.request = request;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 对需要增强方法 进行覆盖</span><br><span class="line">    @Override</span><br><span class="line">    public Map getParameterMap() &#123;</span><br><span class="line">        // 先获得请求方式</span><br><span class="line">        String method = request.getMethod();</span><br><span class="line">        if (method.equalsIgnoreCase(&quot;post&quot;)) &#123;</span><br><span class="line">            // post请求</span><br><span class="line">            try &#123;</span><br><span class="line">                // 处理post乱码</span><br><span class="line">                request.setCharacterEncoding(&quot;utf-8&quot;);</span><br><span class="line">                return request.getParameterMap();</span><br><span class="line">            &#125; catch (UnsupportedEncodingException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; else if (method.equalsIgnoreCase(&quot;get&quot;)) &#123;</span><br><span class="line">            // get请求</span><br><span class="line">            Map&lt;String, String[]&gt; parameterMap = request.getParameterMap();</span><br><span class="line">            if (!hasEncode) &#123; // 确保get手动编码逻辑只运行一次</span><br><span class="line">                for (String parameterName : parameterMap.keySet()) &#123;</span><br><span class="line">                    String[] values = parameterMap.get(parameterName);</span><br><span class="line">                    if (values != null) &#123;</span><br><span class="line">                        for (int i = 0; i &lt; values.length; i++) &#123;</span><br><span class="line">                            try &#123;</span><br><span class="line">                                // 处理get乱码</span><br><span class="line">                                values[i] = new String(values[i]</span><br><span class="line">                                        .getBytes(&quot;ISO-8859-1&quot;), &quot;utf-8&quot;);</span><br><span class="line">                            &#125; catch (UnsupportedEncodingException e) &#123;</span><br><span class="line">                                e.printStackTrace();</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                hasEncode = true;</span><br><span class="line">            &#125;</span><br><span class="line">            return parameterMap;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        return super.getParameterMap();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public String getParameter(String name) &#123;</span><br><span class="line">        Map&lt;String, String[]&gt; parameterMap = getParameterMap();</span><br><span class="line">        String[] values = parameterMap.get(name);</span><br><span class="line">        if (values == null) &#123;</span><br><span class="line">            return null;</span><br><span class="line">        &#125;</span><br><span class="line">        return values[0]; // 取回参数的第一个值</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public String[] getParameterValues(String name) &#123;</span><br><span class="line">        Map&lt;String, String[]&gt; parameterMap = getParameterMap();</span><br><span class="line">        String[] values = parameterMap.get(name);</span><br><span class="line">        return values;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在上述方法中，对request进行了增强，根据请求方法的不同，对request所携带的表单数据进行中文乱码的处理。然后将增强后的request向后传递：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">// 对request包装增强</span><br><span class="line">HttpServletRequest myrequest = new MyRequest(httpServletRequest);</span><br><span class="line">chain.doFilter(myrequest, response);//将包装后的myrequest对象作为request对象向后传递</span><br></pre></td></tr></table></figure>
+
+<p>在web.xml中做如下配置</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">&lt;filter&gt;</span><br><span class="line">    &lt;display-name&gt;GenericEncodingFilter&lt;/display-name&gt;</span><br><span class="line">    &lt;filter-name&gt;GenericEncodingFilter&lt;/filter-name&gt;</span><br><span class="line">    &lt;filter-class&gt;com.wfm.web.filter.GenericEncodingFilter&lt;/filter-class&gt;</span><br><span class="line">  &lt;/filter&gt;</span><br><span class="line">  &lt;filter-mapping&gt;</span><br><span class="line">    &lt;filter-name&gt;GenericEncodingFilter&lt;/filter-name&gt;</span><br><span class="line">    &lt;url-pattern&gt;/*&lt;/url-pattern&gt;</span><br><span class="line">  &lt;/filter-mapping&gt;</span><br></pre></td></tr></table></figure>
+<p>上述配置中<code>&lt;url-pattern&gt;&lt;/url-pattern&gt; </code>,决定了该编码过滤器对哪些请求进行过滤，<code>/*</code>意思是指，对访问该web项目的所有请求都进行过滤。</p>
+<h2 id="如何对所有的servlet进行请求的过滤？"><a href="#如何对所有的servlet进行请求的过滤？" class="headerlink" title="如何对所有的servlet进行请求的过滤？"></a>如何对所有的servlet进行请求的过滤？</h2><p>以下是一个servlet的配置：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">&lt;servlet&gt;</span><br><span class="line">    &lt;description&gt;&lt;/description&gt;</span><br><span class="line">    &lt;display-name&gt;FormServlet&lt;/display-name&gt;</span><br><span class="line">    &lt;servlet-name&gt;FormServlet&lt;/servlet-name&gt;</span><br><span class="line">    &lt;servlet-class&gt;com.wfm.web.servlet.FormServlet&lt;/servlet-class&gt;</span><br><span class="line">  &lt;/servlet&gt;</span><br><span class="line">  &lt;servlet-mapping&gt;</span><br><span class="line">    &lt;servlet-name&gt;FormServlet&lt;/servlet-name&gt;</span><br><span class="line">    &lt;url-pattern&gt;/FormServlet&lt;/url-pattern&gt;</span><br><span class="line">  &lt;/servlet-mapping&gt;</span><br></pre></td></tr></table></figure>
+<p>在上述配置中，请求通过访问<code>/FormServlet</code>路径触发FormServlet，因此，我们可以拦截所有对该路径的请求。但是如果我们要拦截的是指定的几个Servlet怎么办？此时，想到了如下方法：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">&lt;servlet&gt;</span><br><span class="line">    &lt;description&gt;&lt;/description&gt;</span><br><span class="line">    &lt;display-name&gt;FormServlet&lt;/display-name&gt;</span><br><span class="line">    &lt;servlet-name&gt;FormServlet&lt;/servlet-name&gt;</span><br><span class="line">    &lt;servlet-class&gt;com.wfm.web.servlet.FormServlet&lt;/servlet-class&gt;</span><br><span class="line">&lt;/servlet&gt;</span><br><span class="line">&lt;servlet-mapping&gt;</span><br><span class="line">    &lt;servlet-name&gt;FormServlet&lt;/servlet-name&gt;</span><br><span class="line">    &lt;url-pattern&gt;/servlet/FormServlet&lt;/url-pattern&gt;</span><br><span class="line">&lt;/servlet-mapping&gt;</span><br></pre></td></tr></table></figure>
+<p>我们可以在<code>FormServlet</code>的请求路径中加上一个虚拟路径，并将所有待拦截的Servlet的路径都添加<code>/servlet</code>即可构造出一个请求的目录，然后将Filter的<code> &lt;url-pattern&gt;/servlet/*&lt;/url-pattern&gt;</code>,这样就实现了对特定几个servlet的请求过滤。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer"><div>
+  <div class="end-slogan" style="text-align:center;font-size:22px;letter-spacing:10px;user-seclect:none;color:#bbb">----------- 本文结束啦<i class="fa fa-star"></i>感谢您阅读-----------</div>		
+</div>
+
+
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Wang Fanming
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://www.wfanming.top/2017/05/12/%E5%85%B3%E4%BA%8EJavaWEB%E9%A1%B9%E7%9B%AE%E4%B8%AD%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/" title="Java WEB项目中中文乱码">https://www.wfanming.top/2017/05/12/关于JavaWEB项目中中文乱码的解决方法/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E4%B8%AD%E6%96%87%E4%B9%B1%E7%A0%81/" rel="tag"># 中文乱码</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/10/22/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E7%9A%84%E6%A0%B8%E5%BF%83%E5%9F%BA%E7%A1%80%E6%8A%80%E6%9C%AF/" rel="next" title="搜索引擎的核心基础技术">
+                  搜索引擎的核心基础技术 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Wang Fanming</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">36k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">33 分钟</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+<br /> #换行
+<!-- 网站运行时间的设置 -->
+<span id="timeDate">载入天数...</span>
+<span id="times">载入时分秒...</span>
+<script>
+    var now = new Date();
+    function createtime() {
+        var grt= new Date("04/21/2019 15:54:40");//此处修改你的建站时间或者网站上线时间
+        now.setTime(now.getTime()+250);
+        days = (now - grt ) / 1000 / 60 / 60 / 24; dnum = Math.floor(days);
+        hours = (now - grt ) / 1000 / 60 / 60 - (24 * dnum); hnum = Math.floor(hours);
+        if(String(hnum).length ==1 ){hnum = "0" + hnum;} minutes = (now - grt ) / 1000 /60 - (24 * 60 * dnum) - (60 * hnum);
+        mnum = Math.floor(minutes); if(String(mnum).length ==1 ){mnum = "0" + mnum;}
+        seconds = (now - grt ) / 1000 - (24 * 60 * 60 * dnum) - (60 * 60 * hnum) - (60 * mnum);
+        snum = Math.round(seconds); if(String(snum).length ==1 ){snum = "0" + snum;}
+        document.getElementById("timeDate").innerHTML = "本站已安全运行 "+dnum+" 天 ";
+        document.getElementById("times").innerHTML = hnum + " 小时 " + mnum + " 分 " + snum + " 秒";
+    }
+setInterval("createtime()",250);
+</script>
+
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>
