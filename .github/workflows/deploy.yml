@@ -46,10 +46,11 @@ jobs:
         GIT_NAME: wangfanming
         GIT_EMAIL: wangfanming1204@gmail.com
         REPO: github.com/wangfanming/wangfanming.github.io
-        GH_TOKEN: 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
+        GH_TOKEN: ${{ secrets.HEXO_DEPLOY_PUB }}
       run: |
         cd ./public && git init && git add .
         git config --global user.name $GIT_NAME
         git config --global user.email $GIT_EMAIL
+        git commit -m "GitHub Actions Auto Builder at $(date +'%Y-%m-%d %H:%M:%S')"
         git commit -m "Site deployed by GitHub Actions"
         git push --force --quiet "https://$GH_TOKEN@$REPO" master:master
