@@ -45,7 +45,7 @@ jobs:
       env:
         GIT_NAME: wangfanming
         GIT_EMAIL: wangfanming1204@gmail.com
-        REPO: github.com/wangfanming/wangfanming.github.io/settings
+        REPO: github.com/wangfanming/wangfanming.github.io
         GH_TOKEN: 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
       run: |
         cd ./public && git init && git add .
