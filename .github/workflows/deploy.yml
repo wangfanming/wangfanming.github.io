@@ -3,7 +3,7 @@ name: Deployment
 
 on:
   push:
-    branches: [hexo] # only push events on source branch trigger deployment
+    branches: [master]
 
 jobs:
   hexo-deployment:
@@ -34,6 +34,9 @@ jobs:
       run: |
         npm install -g hexo-cli
         npm install
+        npm install hexo-generator-searchdb --save
+        npm install hexo-generator-sitemap --save
+        npm install hexo-symbols-count-time --save
 
     - name: Generate files
       # 编译 markdown 文件
@@ -46,11 +49,11 @@ jobs:
         GIT_NAME: wangfanming
         GIT_EMAIL: wangfanming1204@gmail.com
         REPO: github.com/wangfanming/wangfanming.github.io
-        GH_TOKEN: ${{ secrets.HEXO_DEPLOY_PUB }}
+        HEXO_DEPLOY_PUB: ${{ secrets.HEXO_DEPLOY_PUB }}
       run: |
         cd ./public && git init && git add .
         git config --global user.name $GIT_NAME
         git config --global user.email $GIT_EMAIL
         git commit -m "GitHub Actions Auto Builder at $(date +'%Y-%m-%d %H:%M:%S')"
         git commit -m "Site deployed by GitHub Actions"
-        git push --force --quiet "https://$GH_TOKEN@$REPO" master:master
+        git push --force --quiet "https://$HEXO_DEPLOY_PUB@$REPO" master:master
