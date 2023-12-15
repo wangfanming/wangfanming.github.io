@@ -246,9 +246,9 @@
 </li>
 </ul>
 <p><strong>systemctl命令是系统服务管理器指令，是service和chkconfig两个命令的组合</strong></p>
-<h4 id="Docker镜像的结构"><a href="#Docker镜像的结构" class="headerlink" title="Docker镜像的结构"></a>Docker镜像的结构</h4><p><img src="https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/docker%E9%95%9C%E5%83%8F%E7%9A%84%E7%BB%93%E6%9E%84.bmp"></p>
+<h4 id="Docker镜像的结构"><a href="#Docker镜像的结构" class="headerlink" title="Docker镜像的结构"></a>Docker镜像的结构</h4><p><img src="/images/docker%E9%95%9C%E5%83%8F%E7%9A%84%E7%BB%93%E6%9E%84.bmp" alt="docker镜像的结构"></p>
 <h4 id="列出镜像"><a href="#列出镜像" class="headerlink" title="列出镜像"></a>列出镜像</h4><p>列出docker下的所有镜像：<code>docker images</code></p>
-<p><img src="https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/%E5%88%97%E5%87%BAdocker%E4%B8%8B%E7%9A%84%E9%95%9C%E5%83%8F%E4%BF%A1%E6%81%AF.bmp"></p>
+<p><img src="/images/%E5%88%97%E5%87%BAdocker%E4%B8%8B%E7%9A%84%E9%95%9C%E5%83%8F%E4%BF%A1%E6%81%AF.bmp" alt="docker下的镜像信息"></p>
 <ul>
 <li><p>REPOSITORY： 镜像所在的仓库名称</p>
 </li>
@@ -274,7 +274,7 @@
 <h4 id="拉取、搜索、删除镜像"><a href="#拉取、搜索、删除镜像" class="headerlink" title="拉取、搜索、删除镜像"></a>拉取、搜索、删除镜像</h4><p>1、拉取镜像</p>
 <p><code>docker pull 镜像名称</code></p>
 <p>2、搜索镜像<br><code>docker search 镜像名称</code> ，例如：<code>docker search tomcat</code></p>
-<p><img src="https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/%E6%90%9C%E7%B4%A2%E9%95%9C%E5%83%8F.bmp"></p>
+<p><img src="/images/%E6%90%9C%E7%B4%A2%E9%95%9C%E5%83%8F.bmp" alt="image/搜索镜像"></p>
 <ul>
 <li>NAME： 仓库名称</li>
 <li>DESCRIPTION： 镜像描述</li>
@@ -332,11 +332,11 @@
 
 <p>4、远程登陆MySQL</p>
 <p>原理:利用容器启动时的端口映射，我们只需要在Navicat上连接虚拟机的<code>33306</code>端口，<br>即可映射至容器内的3306端口，连接上容器内的MySQL，然后就可以像操作普通MySQL数据库<br>一样，对容器内MySQL数据库进行操作。</p>
-<p><img src="https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/%E8%BF%9E%E6%8E%A5%E5%AE%B9%E5%99%A8%E5%86%85mysql.bmp"></p>
+<p><img src="/images/%E8%BF%9E%E6%8E%A5%E5%AE%B9%E5%99%A8%E5%86%85mysql.bmp" alt="连接容器内mysql"></p>
 <p>5、查看容器IP地址</p>
 <p>以下命令可以查看容器运行的各种数据：</p>
 <p><code>docker inspect pinyougou_mysql</code></p>
-<p><img src="https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/%E6%9F%A5%E7%9C%8B%E5%AE%B9%E5%99%A8%E8%BF%90%E8%A1%8C%E6%83%85%E5%86%B5.bmp"></p>
+<p><img src="/images/%E6%9F%A5%E7%9C%8B%E5%AE%B9%E5%99%A8%E8%BF%90%E8%A1%8C%E6%83%85%E5%86%B5.bmp" alt="查看容器运行情况"></p>
 <p>也可以使用以下命令直接输出IP地址：</p>
 <p><code>docker inspect --format=&#39;&#123;&#123;.NetworkSettings.IPAddress&#125;&#125;&#39; mysql_pinyougou</code></p>
 <p><strong>这个IP地址是由docker的服务端维护的，可以用于该服务端下所有客户端的通信</strong>。</p>
@@ -457,6 +457,100 @@
 <h2 id="配置Github-Actions"><a href="#配置Github-Actions" class="headerlink" title="配置Github Actions"></a>配置Github Actions</h2><blockquote>
 <p>上述博客发布过程，每次必须编译然后进行上传，流程繁琐，且存在本地Node.js升级后与Hexo不匹配的问题，因此可以考虑使用Github Actions的持续集成能力来完成这个自动化过程。</p>
 </blockquote>
+<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>Github Actions 可以很方便实现 CI&#x2F;CD 工作流，类似 Travis 的用法，来帮我们完成一些工作，比如实现自动化测试、打包、部署等操作。当我们运行 Jobs 时，它会创建一个容器 (runner)，容器支持：Ubuntu、Windows 和 MacOS 等系统，在容器中我们可以安装软件，利用安装的软件帮我们处理一些数据，然后把处理好的数据推送到某个地方。</p>
+<p>本文将介绍利用 Github Actions 实现自动部署 hexo 到 Github Pages，在之前我们需要写完文章执行 <code>hexo generate --deploy</code> 来部署，当你文章比较多的时候，可能还需要等待很久，而且还可能会遇到本地安装的 Node.js 版本与 Hexo 不兼容的问题，目前我就是因为电脑的 Node.js 版本升到 v14 版本导致与 Hexo 不兼容部署不了，才来捣腾 Github Actions 功能的。利用 Github Actions 你将会没有这些烦恼。</p>
+<h2 id="前提"><a href="#前提" class="headerlink" title="前提"></a>前提</h2><h3 id="创建所需仓库"><a href="#创建所需仓库" class="headerlink" title="创建所需仓库"></a>创建所需仓库</h3><ol>
+<li>创建 <code>blog</code> 仓库用来存放 Hexo 项目</li>
+<li>创建 <code>your.github.io</code> 仓库用来存放静态博客页面</li>
+</ol>
+<h3 id="生成部署密钥"><a href="#生成部署密钥" class="headerlink" title="生成部署密钥"></a>生成部署密钥</h3><p>一路按回车直到生成成功</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">$ ssh-keygen -f github-deploy-key</span><br></pre></td></tr></table></figure>
+
+<p>当前目录下会有 <code>github-deploy-key</code> 和 <code>github-deploy-key.pub</code> 两个文件。</p>
+<h3 id="配置部署密钥"><a href="#配置部署密钥" class="headerlink" title="配置部署密钥"></a>配置部署密钥</h3><p>复制 <code>github-deploy-key</code> 文件内容，在 <code>blog</code> 仓库 <code>Settings -&gt; Secrets -&gt; Add a new secret</code> 页面上添加。</p>
+<ol>
+<li>在 <code>Name</code> 输入框填写 <code>HEXO_DEPLOY_PRI</code>。</li>
+<li>在 <code>Value</code> 输入框填写 <code>github-deploy-key</code> 文件内容。</li>
+</ol>
+<p><img src="https://sanonz.github.io/2020/deploy-a-hexo-blog-from-github-actions/add-secret@2x.png" alt="img"></p>
+<p>复制 <code>github-deploy-key.pub</code> 文件内容，在 <code>your.github.io</code> 仓库 <code>Settings -&gt; Deploy keys -&gt; Add deploy key</code> 页面上添加。</p>
+<ol>
+<li>在 <code>Title</code> 输入框填写 <code>HEXO_DEPLOY_PUB</code>。</li>
+<li>在 <code>Key</code> 输入框填写 <code>github-deploy-key.pub</code> 文件内容。</li>
+<li>勾选 <code>Allow write access</code> 选项。</li>
+</ol>
+<p><img src="https://sanonz.github.io/2020/deploy-a-hexo-blog-from-github-actions/add-key@2x.png" alt="img"></p>
+<h2 id="编写-Github-Actions"><a href="#编写-Github-Actions" class="headerlink" title="编写 Github Actions"></a>编写 Github Actions</h2><h3 id="Workflow-模版"><a href="#Workflow-模版" class="headerlink" title="Workflow 模版"></a>Workflow 模版</h3><p>在 <code>blog</code> 仓库根目录下创建 <code>.github/workflows/deploy.yml</code> 文件，目录结构如下。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">blog (repository)</span><br><span class="line">└── .github</span><br><span class="line">    └── workflows</span><br><span class="line">        └── deploy.yml</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>deploy.yml</code> 文件中粘贴以下内容。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">name:</span> <span class="string">Duncan&#x27;s</span> <span class="string">Blog</span> <span class="string">CI/CD</span></span><br><span class="line"></span><br><span class="line"><span class="attr">on:</span></span><br><span class="line">  <span class="attr">push:</span></span><br><span class="line">    <span class="attr">branches:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">main</span></span><br><span class="line"></span><br><span class="line"><span class="attr">env:</span></span><br><span class="line">  <span class="attr">GIT_USER:</span> <span class="string">wangfanming</span></span><br><span class="line">  <span class="attr">GIT_EMAIL:</span> <span class="string">wangfanming1204@gmail.com</span></span><br><span class="line">  <span class="attr">THEME_REPO:</span> <span class="string">wangfanming/hexo-theme-next</span></span><br><span class="line">  <span class="attr">THEME_BRANCH:</span> <span class="string">master</span></span><br><span class="line">  <span class="attr">DEPLOY_REPO:</span> <span class="string">wangfanming/wangfanming.github.io</span></span><br><span class="line">  <span class="attr">DEPLOY_BRANCH:</span> <span class="string">main</span></span><br><span class="line"></span><br><span class="line"><span class="attr">jobs:</span></span><br><span class="line">  <span class="attr">build:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">Build</span> <span class="string">on</span> <span class="string">node</span> <span class="string">$&#123;&#123;</span> <span class="string">matrix.node_version</span> <span class="string">&#125;&#125;</span> <span class="string">and</span> <span class="string">$&#123;&#123;</span> <span class="string">matrix.os</span> <span class="string">&#125;&#125;</span></span><br><span class="line">    <span class="attr">runs-on:</span> <span class="string">ubuntu-latest</span></span><br><span class="line">    <span class="attr">strategy:</span></span><br><span class="line">      <span class="attr">matrix:</span></span><br><span class="line">        <span class="attr">os:</span> [<span class="string">ubuntu-latest</span>]</span><br><span class="line">        <span class="attr">node_version:</span> [<span class="number">21.4</span><span class="number">.0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="attr">steps:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Checkout</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/checkout@v2</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Checkout</span> <span class="string">theme</span> <span class="string">repo</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/checkout@v2</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">repository:</span> <span class="string">$&#123;&#123;</span> <span class="string">env.THEME_REPO</span> <span class="string">&#125;&#125;</span></span><br><span class="line">          <span class="attr">ref:</span> <span class="string">$&#123;&#123;</span> <span class="string">env.THEME_BRANCH</span> <span class="string">&#125;&#125;</span></span><br><span class="line">          <span class="attr">path:</span> <span class="string">themes/next</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Checkout</span> <span class="string">deploy</span> <span class="string">repo</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/checkout@v2</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">repository:</span> <span class="string">$&#123;&#123;</span> <span class="string">env.DEPLOY_REPO</span> <span class="string">&#125;&#125;</span></span><br><span class="line">          <span class="attr">ref:</span> <span class="string">$&#123;&#123;</span> <span class="string">env.DEPLOY_BRANCH</span> <span class="string">&#125;&#125;</span></span><br><span class="line">          <span class="attr">path:</span> <span class="string">.deploy_git</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Use</span> <span class="string">Node.js</span> <span class="string">$&#123;&#123;</span> <span class="string">matrix.node_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/setup-node@v1</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">node-version:</span> <span class="string">$&#123;&#123;</span> <span class="string">matrix.node_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Cache</span> <span class="string">NPM</span> <span class="string">dependencies</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/cache@v2</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">            <span class="comment"># npm cache files are stored in `~/.npm` on Linux/macOS</span></span><br><span class="line">            <span class="attr">path:</span> <span class="string">~/.npm</span></span><br><span class="line">            <span class="comment"># path: node_modules</span></span><br><span class="line">            <span class="attr">key:</span> <span class="string">$&#123;&#123;</span> <span class="string">runner.OS</span> <span class="string">&#125;&#125;-npm-cache</span></span><br><span class="line">            <span class="attr">restore-keys:</span> <span class="string">|</span></span><br><span class="line"><span class="string">              $&#123;&#123; runner.OS &#125;&#125;-npm-cache</span></span><br><span class="line"><span class="string"></span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Configuration</span> <span class="string">environment</span></span><br><span class="line">        <span class="attr">env:</span></span><br><span class="line">          <span class="attr">HEXO_DEPLOY_PRI:</span> <span class="string">$&#123;&#123;secrets.HEXO_DEPLOY_PRI&#125;&#125;</span></span><br><span class="line">        <span class="attr">run:</span> <span class="string">|</span></span><br><span class="line"><span class="string">          sudo timedatectl set-timezone &quot;Asia/Shanghai&quot;</span></span><br><span class="line"><span class="string">          mkdir -p ~/.ssh/</span></span><br><span class="line"><span class="string">          echo &quot;$HEXO_DEPLOY_PRI&quot; &gt; ~/.ssh/id_rsa</span></span><br><span class="line"><span class="string">          chmod 600 ~/.ssh/id_rsa</span></span><br><span class="line"><span class="string">          ssh-keyscan github.com &gt;&gt; ~/.ssh/known_hosts</span></span><br><span class="line"><span class="string">          git config --global user.name $GIT_USER</span></span><br><span class="line"><span class="string">          git config --global user.email $GIT_EMAIL</span></span><br><span class="line"><span class="string">          cp _config.next.yml themes/next/_config.yml</span></span><br><span class="line"><span class="string"></span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Init</span> <span class="string">Node.js</span> <span class="comment"># 安装源代码所需插件</span></span><br><span class="line">        <span class="attr">run:</span> <span class="string">|</span></span><br><span class="line"><span class="string">          npm install</span></span><br><span class="line"><span class="string">          echo &quot;Init node successful&quot;</span></span><br><span class="line"><span class="string"></span>      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Install</span> <span class="string">Hexo-cli</span> <span class="comment"># 安装 Hexo</span></span><br><span class="line">        <span class="attr">run:</span> <span class="string">|</span></span><br><span class="line"><span class="string">          npm install -g hexo-cli --save</span></span><br><span class="line"><span class="string">          npm i -S hexo-prism-plugin -g</span></span><br><span class="line"><span class="string">          npm i -S hexo-generator-search  -g</span></span><br><span class="line"><span class="string">          npm i -S hexo-symbols-count-time  -g</span></span><br><span class="line"><span class="string">          npm i -S hexo-permalink-pinyin  -g</span></span><br><span class="line"><span class="string">          npm i -S hexo-abbrlink -g</span></span><br><span class="line"><span class="string">          npm i -S hexo-wordcount  -g</span></span><br><span class="line"><span class="string">          npm i -S hexo-generator-feed  -g</span></span><br><span class="line"><span class="string">          npm i -S hexo-plugin-gitalk -g</span></span><br><span class="line"><span class="string">          echo &quot;install hexo successful&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Build</span> <span class="string">Blog</span> <span class="comment"># 编译创建静态博客文件</span></span><br><span class="line">        <span class="attr">run:</span> <span class="string">|</span></span><br><span class="line"><span class="string">          hexo clean</span></span><br><span class="line"><span class="string">          hexo g</span></span><br><span class="line"><span class="string">          hexo deploy</span></span><br><span class="line"><span class="string">          echo &quot;Build blog successful&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="模版参数说明"><a href="#模版参数说明" class="headerlink" title="模版参数说明"></a>模版参数说明</h3><ul>
+<li><p><em>name</em> 为此 Action 的名字</p>
+</li>
+<li><p><em>on</em> 触发条件，当满足条件时会触发此任务，这里的 <code>on.push.branches.$.master</code> 是指当 <code>master</code> 分支收到 <code>push</code> 后执行任务。</p>
+</li>
+<li><p>env</p>
+<p>为环境变量对象</p>
+<ul>
+<li><em>env.GIT_USER</em> 为 Hexo 编译后使用此 git 用户部署到仓库。</li>
+<li><em>env.GIT_EMAIL</em> 为 Hexo 编译后使用此 git 邮箱部署到仓库。</li>
+<li><em>env.THEME_REPO</em> 为您的 Hexo 所使用的主题的仓库，这里为 <code>sanonz/hexo-theme-concise</code>。</li>
+<li><em>env.THEME_BRANCH</em> 为您的 Hexo 所使用的主题仓库的版本，可以是：branch、tag 或者 SHA。</li>
+<li><em>env.DEPLOY_REPO</em> 为 Hexo 编译后要部署的仓库，例如：<code>sanonz/sanonz.github.io</code>。</li>
+<li><em>env.DEPLOY_BRANCH</em> 为 Hexo 编译后要部署到的分支，例如：master。</li>
+</ul>
+</li>
+<li><p>jobs</p>
+<p>为此 Action 下的任务列表</p>
+<ul>
+<li><p><em>jobs.{job}.name</em> 任务名称</p>
+</li>
+<li><p><em>jobs.{job}.runs-on</em> 任务所需容器，可选值：<code>ubuntu-latest</code>、<code>windows-latest</code>、<code>macos-latest</code>。</p>
+</li>
+<li><p><em>jobs.{job}.strategy</em> 策略下可以写 <code>array</code> 格式，此 job 会遍历此数组执行。</p>
+</li>
+<li><p>jobs.{job}.steps</p>
+<p>一个步骤数组，可以把所要干的事分步骤放到这里。</p>
+<ul>
+<li><em>jobs.{job}.steps.$.name</em> 步骤名，编译时会会以 LOG 形式输出。</li>
+<li><em>jobs.{job}.steps.$.uses</em> 所要调用的 Action，可以到 <a href="https://github.com/actions">https://github.com/actions</a> 查看更多。</li>
+<li><em>jobs.{job}.steps.$.with</em> 一个对象，调用 Action 传的参数，具体可以查看所使用 Action 的说明。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="第三方-Actions"><a href="#第三方-Actions" class="headerlink" title="第三方 Actions"></a>第三方 Actions</h3><p>使用第三方 Actions 语法 <code>&#123;owner&#125;/&#123;repo&#125;@&#123;ref&#125;</code> 或者 <code>&#123;owner&#125;/&#123;repo&#125;/&#123;path&#125;@&#123;ref&#125;</code> 例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">jobs:</span><br><span class="line">  build:</span><br><span class="line">    runs-on: ubuntu-latest</span><br><span class="line">    steps:</span><br><span class="line">      - uses: actions/checkout@v2</span><br></pre></td></tr></table></figure>
+
+<p>一、调用 <code>actions/checkout@v2</code> 可以实现 Checkout 一个 git 仓库到容器。</p>
+<p>例如 Checkout 当前仓库到本地，<code>with.repo</code> 不填写默认为当前仓库。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">jobs:</span><br><span class="line">  build:</span><br><span class="line">    runs-on: ubuntu-latest</span><br><span class="line">    steps:</span><br><span class="line">      - uses: actions/checkout@v2</span><br><span class="line">        # with:</span><br><span class="line">          # repository: $&#123;&#123; github.repository &#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>例如 Checkout 第三方仓库 <code>git@github.com:sanonz/hexo-theme-concise.git</code> 的 <code>master</code> 分支到容器 <code>themes/concise</code> 目录。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">jobs:</span><br><span class="line">  build:</span><br><span class="line">    runs-on: ubuntu-latest</span><br><span class="line">    steps:</span><br><span class="line">      - uses: actions/checkout@v2</span><br><span class="line">      - with:</span><br><span class="line">          repository: sanonz/hexo-theme-concise</span><br><span class="line">          ref: master</span><br><span class="line">          path: themes/concise</span><br></pre></td></tr></table></figure>
+
+<p>二、调用 <code>actions/setup-node@v1</code> 可以配置容器 Node.js 环境。</p>
+<p>例如安装 Node.js 版本 v12 到容器中，<code>with.node-version</code> 可以指定 Node.js 版本。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">jobs:</span><br><span class="line">  build:</span><br><span class="line">    runs-on: ubuntu-latest</span><br><span class="line">    steps:</span><br><span class="line">      - uses: actions/setup-node@v1</span><br><span class="line">      - with:</span><br><span class="line">          node-version: v12</span><br></pre></td></tr></table></figure>
+
+<p>可以在这里查找更多 Actions 以及使用方式 <a href="https://github.com/marketplace?type=actions&query=checkout">官方 Actions 市场</a>。</p>
+<h3 id="配置文件"><a href="#配置文件" class="headerlink" title="配置文件"></a>配置文件</h3><p>复制一份 <a href="https://github.com/sanonz/hexo-theme-concise/blob/master/_config.example.yml%EF%BC%8C%E6%94%BE%E5%88%B0">https://github.com/sanonz/hexo-theme-concise/blob/master/_config.example.yml，放到</a> <code>blog</code> 根目录下，名为 <code>_config.theme.yml</code>，如果您已经配置过此文件，只需要把您的复制过来就行。</p>
+<p>最终目录结构</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">blog (repository)</span><br><span class="line">├── _config.theme.yml</span><br><span class="line">└── .github</span><br><span class="line">    └── workflows</span><br><span class="line">        └── deploy.yml</span><br></pre></td></tr></table></figure>
+
+<p>把 <code>_config.theme.yml</code> 与 <code>deploy.yml</code> 文件推送到 <code>blog</code> 仓库，在此仓库 <code>Actions</code> 页面可以看到一个名字为 <code>CI</code> 的 Action。</p>
+<h3 id="执行任务"><a href="#执行任务" class="headerlink" title="执行任务"></a>执行任务</h3><p>写一篇文章，<code>push</code> 到 <code>blog</code> 仓库的 <code>master</code> 分支，在此仓库 <code>Actions</code> 页面查看当前 task。</p>
+<p><img src="https://sanonz.github.io/2020/deploy-a-hexo-blog-from-github-actions/run@2x.png" alt="img"></p>
+<p>当任务完成后查看您的博客 <code>https://your.github.io</code>，如果不出意外的话已经可以看到新添加的文章了。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>偷懒是人类发展的动力，人都有偷懒的想法，目的就是为了让自己能够活得更好，经过几千年的不断发展，现在人偷懒的方式无疑更加的先进。</p>
+<p>至此结束，感谢阅读。</p>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><ul>
+<li><a href="https://sanonz.github.io/2020/deploy-a-hexo-blog-from-github-actions/">利用 Github Actions 自动部署 Hexo 博客</a></li>
+<li><a href="https://sanonz.github.io/2017/hello-world/">Hexo 搭建静态博客与 hexo-theme-concise 主题使用教程</a></li>
+</ul>
 ]]></content>
       <categories>
         <category>Web</category>
@@ -576,7 +670,7 @@
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">我：&#123;document1[1:1],document3[1:2]&#125;</span><br><span class="line">爱：&#123;docuemnt1[1:2],document3[1:1]&#125;</span><br><span class="line">我的：&#123;document1[1:3,1:5]&#125;</span><br><span class="line">祖国：&#123;document1[1:4,1:6],document2[1:2,1:3]&#125;</span><br></pre></td></tr></table></figure>
 <p>使用倒排技术进行查询<br>1，先通过关键词找到对应的索引数据</p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">祖国：&#123;document1[1:4,1:6],document2[1:2,1:3]&#125;</span><br></pre></td></tr></table></figure>
-<p>2,根据索引数据拼装response返回结果集<br>3，展示给用户结果<br><img src="/img/2017-09-09_093931.png"></p>
+<p>2,根据索引数据拼装response返回结果集<br>3，展示给用户结果<br><img src="/images/2017-09-09_093931.png"></p>
 <h1 id="4、lucene快速入门"><a href="#4、lucene快速入门" class="headerlink" title="4、lucene快速入门"></a>4、lucene快速入门</h1><ul>
 <li>创建maven项目导入lucene的pom依赖<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">&lt;dependencies&gt;</span><br><span class="line">	   &lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.apache.lucene&lt;/groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;lucene-core&lt;/artifactId&gt;</span><br><span class="line">		&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">	&lt;/dependency&gt;</span><br><span class="line">	&lt;!-- 查询索引的一些包 --&gt;</span><br><span class="line">	&lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.apache.lucene&lt;/groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;lucene-queries&lt;/artifactId&gt;</span><br><span class="line">		&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">	&lt;/dependency&gt;</span><br><span class="line">	&lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.apache.lucene&lt;/groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;lucene-test-framework&lt;/artifactId&gt;</span><br><span class="line">		&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">	&lt;/dependency&gt;</span><br><span class="line">	&lt;!-- 创建索引时，需要创建倒排索引信息，创建倒排需要分词 --&gt;</span><br><span class="line">	&lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.apache.lucene&lt;/groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;lucene-analyzers-common&lt;/artifactId&gt;</span><br><span class="line">		&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">	&lt;/dependency&gt;</span><br><span class="line">	&lt;!--  如果用户的输入的关键词是个组合词，或者一个句子：为什么打雷不下雨？ --&gt;</span><br><span class="line">	&lt;!-- 用来解析用户的查询意图 --&gt;</span><br><span class="line">	&lt;dependency&gt;</span><br><span class="line">		&lt;groupId&gt;org.apache.lucene&lt;/groupId&gt;</span><br><span class="line">		&lt;artifactId&gt;lucene-queryparser&lt;/artifactId&gt;</span><br><span class="line">		&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">	&lt;/dependency&gt;</span><br><span class="line"> &lt;/dependencies&gt;</span><br></pre></td></tr></table></figure></li>
 </ul>
@@ -585,7 +679,7 @@
 <h1 id="4-2、使用luke工具查看索引库"><a href="#4-2、使用luke工具查看索引库" class="headerlink" title="4.2、使用luke工具查看索引库"></a>4.2、使用luke工具查看索引库</h1><ul>
 <li>分析出lucene索引库会存储两种类型的数据<ul>
 <li>保存索引数据</li>
-<li>保存原始数据<br>  <img src="/img/2017-09-09_105613.png"><br>  <img src="/img/2017-09-09_110305.png"></li>
+<li>保存原始数据<br>  <img src="/images/2017-09-09_105613.png"><br>  <img src="/images/2017-09-09_110305.png"></li>
 </ul>
 </li>
 </ul>
@@ -606,18 +700,18 @@
 <li>是什么？ <a href="https://www.oschina.net/question/28_61577">中国林良益 2012版本之后 在阿里</a></li>
 <li>maven项目，2012年发布jar，没有发布到maven。<ul>
 <li>需要将jar包导入到本地mvn仓库<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">mvn install:install-file -Dfile=IKAnalyzer2012FF_u1.jar -DgroupId=org.wltea.ik-analyzer -DartifactId=ik-analyzer -Dversion=4.10.2 -Dpackaging=jar </span><br></pre></td></tr></table></figure>
-<img src="/img/2017-09-09_143433.png"></li>
+<img src="/images/2017-09-09_143433.png"></li>
 </ul>
 </li>
 <li>在项目中使用<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">	&lt;groupId&gt;org.wltea.ik-analyzer&lt;/groupId&gt;</span><br><span class="line">	&lt;artifactId&gt;ik-analyzer&lt;/artifactId&gt;</span><br><span class="line">	&lt;version&gt;4.10.2&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure></li>
-<li>使用自己的词库<br><img src="/img/2017-09-09_143559.png"><br><img src="/img/2017-09-09_143637.png"></li>
+<li>使用自己的词库<br><img src="/images/2017-09-09_143559.png"><br><img src="/images/2017-09-09_143637.png"></li>
 <li>ik分词器和lucene的关系<ul>
-<li>ik是一个独立的分词器<br>  <img src="/img/2017-09-09_152113.png"></li>
+<li>ik是一个独立的分词器<br>  <img src="/images/2017-09-09_152113.png"></li>
 <li>由于lucene的查询功能底层使用了倒排索引的技术，而倒排索引需要对内容进行分词，才使用了分词技术。</li>
 </ul>
 </li>
 </ul>
-<h1 id="6、lucene的花式查询"><a href="#6、lucene的花式查询" class="headerlink" title="6、lucene的花式查询"></a>6、lucene的花式查询</h1><p><img src="/img/2017-09-09_152529.png"></p>
+<h1 id="6、lucene的花式查询"><a href="#6、lucene的花式查询" class="headerlink" title="6、lucene的花式查询"></a>6、lucene的花式查询</h1><p><img src="/images/2017-09-09_152529.png"></p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">// TermQuery query = new TermQuery(new Term(&quot;content&quot;, &quot;战&quot;));</span><br><span class="line"></span><br><span class="line">//// 通过两次置换，能够得到一个词条</span><br><span class="line"> Term term = new Term(&quot;content&quot;,&quot;大据数&quot;);</span><br><span class="line"> FuzzyQuery query = new FuzzyQuery(term);</span><br><span class="line"></span><br><span class="line">//通过前缀查询</span><br><span class="line">PrefixQuery query = new PrefixQuery(new Term(&quot;content&quot;, &quot;大&quot;));</span><br><span class="line"></span><br><span class="line">WildcardQuery query = new WildcardQuery(new Term(&quot;content&quot;,&quot;大*&quot;));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">BooleanQuery query = new BooleanQuery();</span><br><span class="line"></span><br><span class="line">WildcardQuery wildcardQuery = new WildcardQuery(new Term(&quot;content&quot;, &quot;大*&quot;));</span><br><span class="line">query.add(wildcardQuery, Occur.MUST);</span><br><span class="line"></span><br><span class="line">PrefixQuery prefixQuery = new PrefixQuery(new Term(&quot;content&quot;, &quot;金&quot;));</span><br><span class="line">query.add(prefixQuery, Occur.MUST);</span><br><span class="line"></span><br><span class="line">//重要：在大多数情况下，用户的输入不一定是一个词条，</span><br><span class="line">//所以我们需要对用户的输入进行分词，将输入编程多个词条之后进行查询。</span><br><span class="line">Analyzer analyzer = new IKAnalyzer();</span><br><span class="line">QueryParser queryParser = new QueryParser(&quot;content&quot;, analyzer);</span><br><span class="line">Query query =queryParser.parse(&quot;学习大数据&quot;);</span><br><span class="line"></span><br><span class="line">//重要：有时候业务会提供多个字段供用户选择，店铺，商家，旺旺。</span><br><span class="line">MultiFieldQueryParser multiFieldQueryParser </span><br><span class="line">= new MultiFieldQueryParser(new String[]&#123;&quot;title&quot;,&quot;content&quot;&#125;,new IKAnalyzer());</span><br><span class="line">Query query =multiFieldQueryParser.parse(&quot;学习大数据&quot;);</span><br></pre></td></tr></table></figure>
 
 <h1 id="7、如何使用lucene开发一个搜索引擎"><a href="#7、如何使用lucene开发一个搜索引擎" class="headerlink" title="7、如何使用lucene开发一个搜索引擎"></a>7、如何使用lucene开发一个搜索引擎</h1><ul>
