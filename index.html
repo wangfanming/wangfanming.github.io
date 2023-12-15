@@ -219,7 +219,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-12-16 01:47:51" itemprop="dateModified" datetime="2023-12-16T01:47:51+08:00">2023-12-16</time>
+                <time title="修改时间：2023-12-16 01:52:31" itemprop="dateModified" datetime="2023-12-16T01:52:31+08:00">2023-12-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -314,7 +314,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-12-16 01:47:51" itemprop="dateModified" datetime="2023-12-16T01:47:51+08:00">2023-12-16</time>
+                <time title="修改时间：2023-12-16 01:52:31" itemprop="dateModified" datetime="2023-12-16T01:52:31+08:00">2023-12-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -409,7 +409,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-12-16 01:47:51" itemprop="dateModified" datetime="2023-12-16T01:47:51+08:00">2023-12-16</time>
+                <time title="修改时间：2023-12-16 01:52:31" itemprop="dateModified" datetime="2023-12-16T01:52:31+08:00">2023-12-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -452,120 +452,14 @@
 <li>Hadoop版本：hadoop-2.7.2</li>
 <li>zookeeper版本：zookeeper-3.4.5</li>
 </ul>
-<h4 id="详细配置"><a href="#详细配置" class="headerlink" title="详细配置"></a>详细配置</h4><table>
-<thead>
-<tr>
-<th>主机名IP</th>
-<th align="center">Namenode</th>
-<th align="right">Datanode</th>
-<th align="right">Yarn</th>
-<th align="right">Zookeeper</th>
-<th align="right">JournalNode</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>node-1:192.168.111.130</td>
-<td align="center">是</td>
-<td align="right">是</td>
-<td align="right">否</td>
-<td align="right">是</td>
-<td align="right">是</td>
-</tr>
-<tr>
-<td>node-2:192.168.111.129</td>
-<td align="center">是</td>
-<td align="right">是</td>
-<td align="right">是</td>
-<td align="right">是</td>
-<td align="right">是</td>
-</tr>
-<tr>
-<td>node-3:192.168.111.128</td>
-<td align="center">否</td>
-<td align="right">是</td>
-<td align="right">是</td>
-<td align="right">是</td>
-<td align="right">是</td>
-</tr>
-</tbody></table>
-<p>1、安装JDK</p>
-<p> (1)  下载 jdk-7u80-linux-x64.tar 文件</p>
-<p> (2)  解压缩文件 tar -zxvf jdk-7u80-linux-x64.tar(尽量使用jdk1.7)</p>
-<p> (3)  在 &#x2F;etc&#x2F;profile文件末尾，添加jdk的配置信息</p>
-<p> (4) 重新加载文件，使配置生效：#source &#x2F;etc&#x2F;profile</p>
-<p> 2、配置SSH免密登陆</p>
-<blockquote>
-<p>SSH免密钥原理：<br>      我们使用ssh-keygen在ServerA上生成私钥跟公钥，将生成的公钥拷贝到远程机器ServerB上后,就可以使用ssh命令无需密码登录到另外一台机器ServerB上。生成公钥与私钥有两种加密方式，第一种是rsa(默认)，还有一种是dsa,使用时两种方式随便选一种即可</p>
-</blockquote>
-<p>  (1) 安装SSH服务<br>  <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">apt-get install ssh</span></span><br></pre></td></tr></table></figure></p>
-<p>  (2) 在三个节点上分别都使用rsa加密生成密钥对<br>  <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">ssh-keygen -t rsa</span></span><br></pre></td></tr></table></figure><br>   按3次Enter键后，会在&#x2F;root&#x2F;.ssh&#x2F;下生成id_rsa (私钥)，和id_rsa.pub(公钥)</p>
-<p>  (3) 将node-1上，将id_rsa.pub读取到authorized_keys中(authorized_keys 第一次读入是不存在的)<br>  <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash"><span class="built_in">cat</span> ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</span></span><br></pre></td></tr></table></figure></p>
-<p>  (4) 分别将node-2和node-3上的公钥都读入到master的authorized_keys中</p>
-<pre><code>   在node-2和node-3上：
-        #scp /root/.ssh/id_rsa.pub  master:/root/
-   在node-1上：
-   每收到一个公钥都读取一次(一个一个地写入文件)：
-        # cat /root/id_rsa.pub &gt;&gt; /root/.ssh/authorized_keys
-</code></pre>
-<p>  (5) 将node-1上的authorized_keys发送到node-2和node-3，以实现三个节点之间的免密钥登录<br>  <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash">scp /root/.ssh/authorized_keys   node-2:/root/.ssh/</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">scp /root/.ssh/authorized_keys   node-3:/root/.ssh/</span></span><br></pre></td></tr></table></figure></p>
-<p>  (6) 在3个节点上修改authorized_keys的权限：<br>  <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash"><span class="built_in">chmod</span> 600 ~/.ssh/authorized_keys</span></span><br></pre></td></tr></table></figure></p>
-<p> 3、Zookeeper集群搭建</p>
-<p>  (1) 下载zookeeper-3.4.9.tar.gz</p>
-<p>  (2)  解压<br>   <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash">tar -zxvf zookeeper-3.4.9.tar.gz -C /home/</span></span><br></pre></td></tr></table></figure><br>  (3) 修改zoo.cfg（可以使用zoo_sample.cfg来生成zoo.cfg）<br>   <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash"><span class="built_in">cp</span> zoo_sample.cfg zoo.cfg</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">vim zoo.cfg</span></span><br></pre></td></tr></table></figure></p>
-<p>   <strong>参数说明</strong>:</p>
-<ul>
-<li>tickTime: zookeeper中使用的基本时间单位, 毫秒值.</li>
-<li>dataDir: 数据目录. 可以是任意目录.</li>
-<li>dataLogDir: log目录, 同样可以是任意目录. 如果没有设置该参数, 将使用和dataDir相同的设置.</li>
-<li>clientPort: 监听client连接的端口号.</li>
-<li>server.X&#x3D;A:B:C 其中X是一个数字, 表示这是第几号server. A是该server所在的IP地址. B配置该server和集群中的leader交换消息所使用的端口. C配置选举leader时所使用的端口. 由于配置的是伪集群模式, 所以各个server的B, C参数必须不同.</li>
-</ul>
-<p>  (4). 根据zoo.cfg各自在节点上的 dataDir下添加myid</p>
-<pre><code>    node-1：
-            #echo &quot;1&quot; &gt;&gt; /home/zookeeperData/myid
-    node-2:
-            #echo &quot;2&quot; &gt;&gt; /home/zookeeperData/myid
-    node-3:
-            #echo &quot;3&quot; &gt;&gt; /home/zookeeperData/myid
-</code></pre>
-<p>  (5) 在各个节点上开启zookeeper服务,并且查看服务是否成功启动<br>   <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">#</span><span class="language-bash">zkServer.sh start</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">zkServer.sh status</span></span><br></pre></td></tr></table></figure></p>
-<p>4、Hadoop集群的搭建</p>
-<p>   (1) 下载 hadoop-2.7.2.tar.gz,并解压<br>   <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">tar -zxvf  hadoop-2.7.2.tar.gz -C /home/</span><br></pre></td></tr></table></figure><br>   (2)修改如下配置文件(在&#x2F;home&#x2F;hadoop-2.7.2&#x2F;etc&#x2F;hadoop&#x2F;下)</p>
-<p>   <strong>修改core-site.xml</strong><br>   <figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">name</span>&gt;</span>fs.defaultFS<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">value</span>&gt;</span>hdfs://nameserver<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">name</span>&gt;</span>hadoop.tmp.dir<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">value</span>&gt;</span>/home/hdfs_all/tmp/<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">name</span>&gt;</span>io.file.buffer.size<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">value</span>&gt;</span>1024<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">name</span>&gt;</span>ha.zookeeper.quorum<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">         <span class="tag">&lt;<span class="name">value</span>&gt;</span>node-1:2181,node-2:2181,node-3:2181<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure><br>   <strong>修改hdfs-site.xml</strong><br>   <figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.nameservices<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">value</span>&gt;</span>nameserver<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.ha.namenodes.nameserver<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">value</span>&gt;</span>nn1,nn2<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.namenode.rpc-address.nameserver.nn1<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">value</span>&gt;</span>node-1:9000<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.namenode.http-address.nameserver.nn1<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">value</span>&gt;</span>node-1:50070<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.namenode.rpc-address.nameserver.nn2<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">value</span>&gt;</span>node-2:9000<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.namenode.http-address.nameserver.nn2<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">value</span>&gt;</span>node-2:50070<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">             <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.namenode.shared.edits.dir<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">             <span class="tag">&lt;<span class="name">value</span>&gt;</span>qjournal://node-1:8485;node-2:8485;node-3:8485/nameserver<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.journalnode.edits.dir<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">value</span>&gt;</span>/home/hdfs_all/journal<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.ha.automatic-failover.enabled<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">              <span class="tag">&lt;<span class="name">value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.client.failover.proxy.provider.nameserver<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">value</span>&gt;</span>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">                 <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.ha.fencing.methods<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">                 <span class="tag">&lt;<span class="name">value</span>&gt;</span>sshfence<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.ha.fencing.ssh.private-key-files<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">value</span>&gt;</span>/root/.ssh/id_rsa<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.namenode.name.dir<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">value</span>&gt;</span>file:///home/hdfs_all/hdfs/name<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.datanode.data.dir<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">value</span>&gt;</span>file:///home/hdfs_all/hdfs/data<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">name</span>&gt;</span>dfs.replication<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">           <span class="tag">&lt;<span class="name">value</span>&gt;</span>2<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">     <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
-<p>   <strong>修改mapred-site.xml</strong>(刚解压的文件中没有给文件，将mapred-site-tempalte.xml复制一份即可)<br>   <figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">name</span>&gt;</span>mapreduce.framework.name<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">value</span>&gt;</span>yarn<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure><br>   <strong>修改yarn-site.xml</strong></p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 开启RM高可用 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.resourcemanager.ha.enabled<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 指定RM的cluster id --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.resourcemanager.cluster-id<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>yrc<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 指定RM的名字 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.resourcemanager.ha.rm-ids<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>rm1,rm2<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 分别指定RM的地址 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.resourcemanager.hostname.rm1<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>node-2<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.resourcemanager.hostname.rm2<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>node-3<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 指定zk集群地址 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.resourcemanager.zk-address<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>node-1:2181,node-2:2181,node-3:2181<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">name</span>&gt;</span>yarn.nodemanager.aux-services<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">value</span>&gt;</span>mapreduce_shuffle<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p><strong>修改slaves</strong></p>
-<p>  删除<code>localhost</code>,添加如下内容：<br>  <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">node-1</span><br><span class="line">node-2</span><br><span class="line">node-3</span><br></pre></td></tr></table></figure><br><strong>修改JAVA_HOME</strong></p>
-<p>分别在文件hadoop-env.sh和yarn-env.sh中添加JAVA_HOME配置</p>
-<p><img src="/images/java_home.bmp"></p>
-<p>5、将hadoop配置文件发送至另外两个节点</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">scp -r /home/hadoop-2.7.2  node-2:/home/</span><br><span class="line">scp -r /home/hadoop-2.7.2  node-3:/home/</span><br></pre></td></tr></table></figure>
-<p>6、给Hadoop配置环境变量(完整的环境变量配置如下)</p>
-<p><img src="/images/%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F.bmp"></p>
-<p>7、将环境变量发送给另外两个节点</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">scp -r /etc/profile  node-2:/etc</span><br><span class="line">scp -r /etc/profile  node-3:/etc</span><br></pre></td></tr></table></figure>
-
-<p><strong>在发送完成后，都要使用<code>source /etc/profile</code>命令重新加载环境变量</strong></p>
-<p>8、启动集群</p>
-<p><strong>按顺序执行以下操作</strong></p>
-<p>在node-1上：</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">zkServer.sh start</span><br><span class="line">zkServer.sh status(要确保zookeeper服务已经启动)</span><br><span class="line">hadoop-daemons.sh start journalnode   (启动journalnode服务)</span><br><span class="line">hdfs zkfc –formatZK(格式化zkfc,让在zookeeper中生成ha节点,只需在第一次启动集群是格式化即可)</span><br><span class="line"></span><br><span class="line">hadoop namenode -format (格式化hdfs,也只在第一次启动集群时格式化)</span><br><span class="line">hadoop-daemon.sh start namenode</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>在node-2上(设置node-2为备份的namenode,所以需要在node-2上启动namenode进程)：</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">hdfs namenode -bootstrapStandby(在第一次启动时执行)</span><br><span class="line">hadoop-daemon.sh start namenode</span><br></pre></td></tr></table></figure>
-<p>启动datanode(任意节点都可以):</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">hadoop-daemons.sh start datanode</span><br></pre></td></tr></table></figure>
-<p>在node-3上启动yarn；</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">start-yarn.sh</span><br></pre></td></tr></table></figure>
-<p>启动zkfc服务(任意节点都可以):</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">hadoop-daemons.sh start zkfc</span><br></pre></td></tr></table></figure>
-
-
-
-<p>然后就可以Web进行访问了</p>
-<p><a target="_blank" rel="noopener" href="http://node-1:50070/">http://node-1:50070</a></p>
-<p><a target="_blank" rel="noopener" href="http://node-2:50070/">http://node-2:50070</a></p>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/08/31/Hadoop-2.7.2%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -615,7 +509,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-12-16 01:47:51" itemprop="dateModified" datetime="2023-12-16T01:47:51+08:00">2023-12-16</time>
+                <time title="修改时间：2023-12-16 01:52:31" itemprop="dateModified" datetime="2023-12-16T01:52:31+08:00">2023-12-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -712,7 +606,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-12-16 01:47:51" itemprop="dateModified" datetime="2023-12-16T01:47:51+08:00">2023-12-16</time>
+                <time title="修改时间：2023-12-16 01:52:31" itemprop="dateModified" datetime="2023-12-16T01:52:31+08:00">2023-12-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -750,7 +644,7 @@
 
       
           <h3 id="原理分析"><a href="#原理分析" class="headerlink" title="原理分析"></a>原理分析</h3><p>首先，用户的行为会触发浏览器对被统计页面的一个HTTP请求。比如，让用户打开<br>一个页面时，触发页面中的埋点代码的执行。</p>
-<p><img src="https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/%E5%9F%8B%E7%82%B9%E6%97%B6%E5%BA%8F%E5%9B%BE.bmp"></p>
+<p><img src="/images/%E5%9F%8B%E7%82%B9%E6%97%B6%E5%BA%8F%E5%9B%BE.bmp"></p>
 <p><strong>埋点</strong>：事先在网页中加入的一小段js代码，这个代码片段一般会动态创建一个<br>script标签，并将src属性指向一个单独的js文件，然后这个js文件会从数据采集服务器端返回，并自动触发(js匿名函数自调用)，<br>这个js往往就是真正的数据收集脚本。数据收集完成后，js会请求一个后端的数据收集脚本，这个脚本一般是一个伪装成图片的动态<br>脚本程序，js会将收集到的数据通过HTTP参数的形式传递给后端脚本。后端脚本解析参数并按指定的格式存储该数据。同时可能会在<br>HTTP响应中给客户端种植一些用于追踪的cookie。</p>
           <!--noindex-->
             <div class="post-button">
@@ -809,7 +703,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-12-16 01:47:51" itemprop="dateModified" datetime="2023-12-16T01:47:51+08:00">2023-12-16</time>
+                <time title="修改时间：2023-12-16 01:52:31" itemprop="dateModified" datetime="2023-12-16T01:52:31+08:00">2023-12-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -850,82 +744,14 @@
 <h2 id="MyCat简介"><a href="#MyCat简介" class="headerlink" title="MyCat简介"></a>MyCat简介</h2><blockquote>
 <p>&emsp;&emsp;Mycat 背后是阿里曾经开源的知名产品——Cobar。 Cobar的核心功能和优势是MySQL数据库分片。<br>&emsp;&emsp;Mycat 是基于 cobar 演变而来， 对 cobar 的代码进行了彻底的重构， 使用 NIO 重构了网络模块，并且优化了Buffer 内核， 增强了聚合，oin等基本特性， 同时兼容绝大多数数据库成为通用的数据库中间件。简单的说， MyCAT 就是： 一个新颖的数据库中间件产品支持 mysql 集群，或者mariadbcluster， 提供高可用性数据分片集群。你可以像使用 mysql 一样使用 mycat。 对于开<br>发人员来说根本感觉不到mycat的存在。</p>
 </blockquote>
-<hr>
-<h2 id="环境需求"><a href="#环境需求" class="headerlink" title="环境需求"></a>环境需求</h2><ul>
-<li>JDK :  1.7及以上版本</li>
-<li>MySQL: mysql5.5以上版本</li>
-</ul>
-<h4 id="Mysql安装与启动步骤："><a href="#Mysql安装与启动步骤：" class="headerlink" title="Mysql安装与启动步骤："></a>Mysql安装与启动步骤：</h4><ol>
-<li>将MySQL的服务端和客户端安装包(RPM)上传到服务器</li>
-<li>查询之前是否安装过MySQL<br> <code># rpm -qa|grep mysql</code></li>
-<li>卸载旧版本的MySQL<br> <code> rpm -e --nodeps XXX</code></li>
-<li>安装服务端<br> <code>rpm -ivh MySQL-server-5.6.17-1.el6.x86_64.rpm</code></li>
-<li>安装客户端<br> <code>rpm -ivh MySQL-client-5.6.17-1.el6.x86_64.rpm</code></li>
-<li>启动MySQL服务<br> <code>service mysql start</code></li>
-<li>登陆MySQL(刚安装的Mysql密码在<code>/root/.mysql_secret</code>)<br><code>mysql -uroot -p密码</code></li>
-<li>设置远程登录权限<br> <code>GRANT ALL PRIVILEGES ON *.* TO &#39;root&#39;@&#39;%&#39;IDENTIFIED BY &#39;123456&#39; WITH GRANT OPTION;</code><br> <code>flush privileges;</code></li>
-</ol>
-<h4 id="MyCat分片-1"><a href="#MyCat分片-1" class="headerlink" title="MyCat分片"></a>MyCat分片</h4><h5 id="分片相关的概念"><a href="#分片相关的概念" class="headerlink" title="分片相关的概念"></a>分片相关的概念</h5><ul>
-<li><p>逻辑库(schema) </p>
-<blockquote>
-<p>&emsp;&emsp;前面一节讲了数据库中间件， 通常对实际应用来说， 并不需要知道中间件的存在， 业务开发<br>人员只需要知道数据库的概念， 所以数据库中间件可以被看做是一个或多个数据库集群构成<br>的逻辑库。(可以理解为一个保存了数据真实地址的映射集合)。</p>
-</blockquote>
-</li>
-<li><p>逻辑表(table)</p>
-<blockquote>
-<p>&emsp;&emsp;既然有逻辑库，那么就会有逻辑表，分布式数据库中，对应用来说，读写数据的表就是逻辑表。逻辑表，可以是数据切分后，分布在一个或多个分片库中，也可以不做数据切分，不分片，只有一个表构成。<br>&emsp;<br><strong>分片表</strong>： 是指那些原有的很大数据的表，需要切分到多个数据库的表，这样， 每个分片都有一部分数据，所有分片构成了完整的数据。总而言之就是需要进行分片的表。<br>&emsp;<br><strong>非分片表</strong>： 一个数据库中并不是所有的表都很大，某些表是可以不用进行切分的， 非分片是相对分片表来说的， 就是那些不需要进行数据切分的表。</p>
-</blockquote>
-</li>
-<li><p>分片节点(dateNode)</p>
-<blockquote>
-<p>&emsp;&emsp;数据切分后，一个大表被分到不同的分片数据库上面，每个表所在的数据库就是分片节点（dataNode)。</p>
-</blockquote>
-</li>
-</ul>
-<p>-节点主机(dateHost)</p>
-<blockquote>
-<p>&emsp;&emsp;数据分片后，每个分片节点(dateNode)不一定都会独占一台机器，同一台机器上可以有多个分片数据库，这样一个或多个分片节点所在的机器就是节点主机,为了规避单节点并发数限制，尽量将读写压力高的分片节点均衡放在不同的节点主机。</p>
-</blockquote>
-<p>-分片规则(rule)</p>
-<blockquote>
-<p>&emsp;&emsp;一个大表被分成若干个分片表，就需要一定的规则，这样按照某种业务规则把数据分到某个分片的规则就是分片规则，数据切分选择选择合适的分片规则非常重要，将极大的避免后续数据处理的难度。</p>
-</blockquote>
-<h4 id="MyCat分片配置"><a href="#MyCat分片配置" class="headerlink" title="MyCat分片配置"></a>MyCat分片配置</h4><h5 id="配置schema-xml"><a href="#配置schema-xml" class="headerlink" title="配置schema.xml"></a>配置schema.xml</h5><blockquote>
-<p>schema 标签用于定义MyCat实例中的逻辑库<br>&emsp;<br>Table 标签定义了MyCat中的逻辑表<br>&emsp;<br>rule 用于指定分片规则，auto-sharding-long 的分片规则是按ID值的范围进行分片,1-5000000为第1片,5000001-10000000 为第 2 片….<br>&emsp;<br>dataNode标签定义了MyCat中的数据节点，也就是数据分片。<br>dataHost标签在mycat逻辑库中也是作为最底层的标签存在，直接定义了具体的数据库实例、读写分离配置和心跳语句。<br>schema.xml配置如下：</p>
-</blockquote>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version=<span class="string">&quot;1.0&quot;</span>?&gt;</span></span><br><span class="line"><span class="meta">&lt;!DOCTYPE <span class="keyword">mycat</span>:schema <span class="keyword">SYSTEM</span> <span class="string">&quot;schema.dtd&quot;</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">mycat:schema</span> <span class="attr">xmlns:mycat</span>=<span class="string">&quot;http://org.opencloudb/&quot;</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">schema</span> <span class="attr">name</span>=<span class="string">&quot;PINYOUGOUDB&quot;</span> <span class="attr">checkSQLschema</span>=<span class="string">&quot;false&quot;</span> <span class="attr">sqlMaxLimit</span>=<span class="string">&quot;100&quot;</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">table</span> <span class="attr">name</span>=<span class="string">&quot;tb_test&quot;</span> <span class="attr">dataNode</span>=<span class="string">&quot;dn1,dn2,dn3&quot;</span> <span class="attr">rule</span>=<span class="string">&quot;auto-sharding-long&quot;</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">schema</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dataNode</span> <span class="attr">name</span>=<span class="string">&quot;dn1&quot;</span> <span class="attr">dataHost</span>=<span class="string">&quot;localhost1&quot;</span> <span class="attr">database</span>=<span class="string">&quot;db1&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dataNode</span> <span class="attr">name</span>=<span class="string">&quot;dn2&quot;</span> <span class="attr">dataHost</span>=<span class="string">&quot;localhost1&quot;</span> <span class="attr">database</span>=<span class="string">&quot;db2&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dataNode</span> <span class="attr">name</span>=<span class="string">&quot;dn3&quot;</span> <span class="attr">dataHost</span>=<span class="string">&quot;localhost1&quot;</span> <span class="attr">database</span>=<span class="string">&quot;db3&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dataHost</span> <span class="attr">name</span>=<span class="string">&quot;localhost1&quot;</span> <span class="attr">maxCon</span>=<span class="string">&quot;1000&quot;</span> <span class="attr">minCon</span>=<span class="string">&quot;10&quot;</span> <span class="attr">balance</span>=<span class="string">&quot;0&quot;</span></span></span><br><span class="line"><span class="tag">    <span class="attr">writeType</span>=<span class="string">&quot;0&quot;</span> <span class="attr">dbType</span>=<span class="string">&quot;mysql&quot;</span> <span class="attr">dbDriver</span>=<span class="string">&quot;native&quot;</span> <span class="attr">switchType</span>=<span class="string">&quot;1&quot;</span></span></span><br><span class="line"><span class="tag">    <span class="attr">slaveThreshold</span>=<span class="string">&quot;100&quot;</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">heartbeat</span>&gt;</span>select user()<span class="tag">&lt;/<span class="name">heartbeat</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">writeHost</span> <span class="attr">host</span>=<span class="string">&quot;hostM1&quot;</span> <span class="attr">url</span>=<span class="string">&quot;localhost:3306&quot;</span> <span class="attr">user</span>=<span class="string">&quot;root&quot;</span></span></span><br><span class="line"><span class="tag"><span class="attr">password</span>=<span class="string">&quot;123456&quot;</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">writeHost</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dataHost</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">mycat:schema</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h5 id="配置server-xml"><a href="#配置server-xml" class="headerlink" title="配置server.xml"></a>配置server.xml</h5><p>server.xml几乎保存了mycat需要的系统配置信息。最常见的是在此配置用户名、密码以及权限。<br>server.xml配置如下：<br>添加UTF-8字符集设置，否则存储中文会出现问号</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;charset&quot;</span>&gt;</span>utf8<span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>修改user的设置，为TESTDB添加root、test用户</p>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">user</span> <span class="attr">name</span>=<span class="string">&quot;test&quot;</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;password&quot;</span>&gt;</span>test<span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;schemas&quot;</span>&gt;</span>TESTDB<span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">user</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">user</span> <span class="attr">name</span>=<span class="string">&quot;root&quot;</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;password&quot;</span>&gt;</span>123456<span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;schemas&quot;</span>&gt;</span>TESTDB<span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">user</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<h5 id="MyCat分片测试"><a href="#MyCat分片测试" class="headerlink" title="MyCat分片测试"></a>MyCat分片测试</h5><p>进入逻辑库TESTDB<br><code># mysql -uroot -p123456 -P8066 -DTESTDB</code><br><code>show tables;</code>会发现已经有表<code>tb_test</code><br>执行以下语句创建一个表</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> tb_test (</span><br><span class="line">id <span class="type">BIGINT</span>(<span class="number">20</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">title <span class="type">VARCHAR</span>(<span class="number">100</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> ,</span><br><span class="line"><span class="keyword">PRIMARY</span> KEY (id)</span><br><span class="line">) ENGINE<span class="operator">=</span>INNODB <span class="keyword">DEFAULT</span> CHARSET<span class="operator">=</span>utf8</span><br></pre></td></tr></table></figure>
-<p>在创建完成后，会对表<code>td_test</code>的结构进行初始化。查看物理数据库<code>db1,db2,db3</code>,会发现，每个物理数据库中都已经创建好了表<code>tb_test</code>。</p>
-<p>然后就可以向逻辑库中的逻辑表中插入数据，数据会按照分片规则进行分片存储。</p>
-<h5 id="MyCat分片规则"><a href="#MyCat分片规则" class="headerlink" title="MyCat分片规则"></a>MyCat分片规则</h5><p>rule.xml用于定义分片规则</p>
-<ol>
-<li>按主键范围分片(rang-long)</li>
-</ol>
-<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">tableRule</span> <span class="attr">name</span>=<span class="string">&quot;auto-sharding-long&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">rule</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">columns</span>&gt;</span>id<span class="tag">&lt;/<span class="name">columns</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">algorithm</span>&gt;</span>rang-long<span class="tag">&lt;/<span class="name">algorithm</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">rule</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">tableRule</span>&gt;</span></span><br></pre></td></tr></table></figure>
-
-<p>配置文件详解：</p>
-<ul>
-<li>tableRule :用于定义固体某个表或某类表的分片规则名称</li>
-<li>column：用于定义分片的列</li>
-<li>algorithm：代表算法的名称</li>
-</ul>
-<p><strong>rang-long</strong>的定义：</p>
-<figure class="highlight js"><table><tr><td class="code"><pre><span class="line">&lt;<span class="keyword">function</span> name=<span class="string">&quot;rang-long&quot;</span></span><br><span class="line">    <span class="keyword">class</span>=<span class="string">&quot;org.opencloudb.route.function.AutoPartitionByLong&quot;</span>&gt;</span><br><span class="line">    <span class="language-xml"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;mapFile&quot;</span>&gt;</span>autopartition-long.txt<span class="tag">&lt;/<span class="name">property</span>&gt;</span></span></span><br><span class="line">&lt;/<span class="keyword">function</span>&gt;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p> <strong>autopartition-long.txt</strong>的定义</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">range start-end ,data node index</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">K=1000,M=10000.</span></span><br><span class="line">0-500M=0</span><br><span class="line">500M-1000M=1</span><br><span class="line">1000M-1500M=2</span><br></pre></td></tr></table></figure>
-
-<hr>
-<ol start="2">
-<li>一致性哈希murmur<br> 当我们需要将数据平均分在几个分区中，需要使用一致性hash规则<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">function</span> <span class="attr">name</span>=<span class="string">&quot;murmur&quot;</span></span></span><br><span class="line"><span class="tag">     <span class="attr">class</span>=<span class="string">&quot;org.opencloudb.route.function.PartitionByMurmurHash&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;seed&quot;</span>&gt;</span>0<span class="tag">&lt;/<span class="name">property</span>&gt;</span><span class="comment">&lt;!--     默认是 0 --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;count&quot;</span>&gt;</span>3<span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--要分片的数据库节点数量，必须指定，否则没法分片--&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">&quot;virtualBucketTimes&quot;</span>&gt;</span>160<span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- 一个实际的数据库节点被映射为这么多虚拟节点， 默认是 160 倍，也就是虚拟节点数是物理节点数的 160 倍 --&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- &lt;property name=&quot;weightMapFile&quot;&gt;weightMapFile&lt;/property&gt; 节点的权重，没有指定权重的节点默认是1。以properties文件的格式填写， 以从 0 开始到 count-1的整数值也就是节点索引为key，以节点权重值为值。 所有权重值必须是正整数， 否则以 1 代替 --&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- &lt;property name=&quot;bucketMapPath&quot;&gt;/etc/mycat/bucketMapPath&lt;/property&gt;</span></span><br><span class="line"><span class="comment">用于测试时观察各物理节点与虚拟节点的分布情况， 如果指定了这个属性， 会把虚拟节点的 murmur hash 值与物理节点的映射按行输出到这个文件， 没有默认值， 如果不指定， 就不会输出任何东西 --&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">function</span>&gt;</span></span><br></pre></td></tr></table></figure>
-配置文件中表规则的定义：<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">tableRule</span> <span class="attr">name</span>=<span class="string">&quot;sharding-by-murmur&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">rule</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">columns</span>&gt;</span>id<span class="tag">&lt;/<span class="name">columns</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">algorithm</span>&gt;</span>murmur<span class="tag">&lt;/<span class="name">algorithm</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">rule</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">tableRule</span>&gt;</span></span><br></pre></td></tr></table></figure>
-在这里是按照id进行hash运算，然后确定数据的分片存储位置</li>
-</ol>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2019/03/28/MyCat%E5%88%86%E7%89%87/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -975,7 +801,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-12-16 01:47:51" itemprop="dateModified" datetime="2023-12-16T01:47:51+08:00">2023-12-16</time>
+                <time title="修改时间：2023-12-16 01:52:31" itemprop="dateModified" datetime="2023-12-16T01:52:31+08:00">2023-12-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1081,7 +907,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-12-16 01:47:51" itemprop="dateModified" datetime="2023-12-16T01:47:51+08:00">2023-12-16</time>
+                <time title="修改时间：2023-12-16 01:52:31" itemprop="dateModified" datetime="2023-12-16T01:52:31+08:00">2023-12-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1194,7 +1020,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-12-16 01:47:51" itemprop="dateModified" datetime="2023-12-16T01:47:51+08:00">2023-12-16</time>
+                <time title="修改时间：2023-12-16 01:52:31" itemprop="dateModified" datetime="2023-12-16T01:52:31+08:00">2023-12-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1237,43 +1063,14 @@
 <h2 id="1-2-ActiveMQ简介"><a href="#1-2-ActiveMQ简介" class="headerlink" title="1.2 ActiveMQ简介"></a>1.2 ActiveMQ简介</h2><blockquote>
 <p>ActiveMQ 是 Apache 出品， 最流行的， 能力强劲的开源消息总线。 ActiveMQ 是一个完全支持 JMS1.1 和 J2EE 1.4 规范的 JMS Provider 实现， 尽管 JMS 规范出台已经是很久的事情了，但是JMS在当今的J2EE应用中间仍然扮演着特殊的地位。</p>
 </blockquote>
-<p>对消息的传递有两种类型：</p>
-<ol>
-<li>一种是点对点(Queue)：消息的生产者和消费者都可以是多个，但是对同一条消息而言，消息的制造者只有一个，消费者也只有一个，生产者和消费者一一对应</li>
-<li>另一种是发布&#x2F;订阅模式：即一个生产者产生并发送一个消息后，可以由多个消费者进行接收。</li>
-</ol>
-<p><strong>JMS定义的五种消息正文格式</strong></p>
-<ul>
-<li>StreamMessage–Java原始值的数据流</li>
-<li>MapMessage–一套名称-值对</li>
-<li>TextMessage–一个字符串对象</li>
-<li>ObjectMessage–一个序列化的Java对象</li>
-<li>ByteMessage–一个字节的数据流</li>
-</ul>
-<hr>
-<p>ActiveMQ安装：<br>下载并解压</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">tar -zxvf apache-activemq-5.12.0-bin.tar.gz</span><br></pre></td></tr></table></figure>
-<p>为apache-activemq-5.12.0赋权</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">chmod 777 apache-activemq-5.12.0</span><br></pre></td></tr></table></figure>
-<p>进入apache-activemq-5.12.0\bin，并且给activemq赋权</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">chmod 755 activemq </span><br></pre></td></tr></table></figure>
-<p>启动</p>
-<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">./activemq start</span><br></pre></td></tr></table></figure>
-<p>ActiveMQ的默认管理端口：8161，通信端口：61616</p>
-<hr>
-<h2 id="ActiveMQ示例"><a href="#ActiveMQ示例" class="headerlink" title="ActiveMQ示例"></a>ActiveMQ示例</h2><h4 id="点对点模式"><a href="#点对点模式" class="headerlink" title="点对点模式"></a>点对点模式</h4><p>(1) 创建activemqDemo,引入依赖</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&lt;groupId&gt;org.apache.activemq&lt;/groupId&gt;</span><br><span class="line">&lt;artifactId&gt;activemq-all&lt;/artifactId&gt;</span><br><span class="line">&lt;version&gt;5.11.2&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
-<p>(2) 创建QueueProducer(核心步骤)</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//1、创建连接工厂</span></span><br><span class="line"><span class="type">ActiveMQConnectionFactory</span> <span class="variable">connectionFactory</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ActiveMQConnectionFaction</span>(<span class="string">&quot;tcp://192.168.25.133:61616&quot;</span>);</span><br><span class="line"><span class="comment">//2、获取连接</span></span><br><span class="line"><span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> connectionFactory.createConnection();</span><br><span class="line"><span class="comment">//3、启动连接</span></span><br><span class="line">connection.start();</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">* 4、获取session</span></span><br><span class="line"><span class="comment">* 第 1 个参数 是否使用事务</span></span><br><span class="line"><span class="comment">* 第 2 个参数 消息的确认模式</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="type">Session</span> <span class="variable">session</span> <span class="operator">=</span> connection.createSession(<span class="literal">false</span>,Session.AUTO_ACKNOWLEDGE);</span><br><span class="line"><span class="comment">//5、创建队列对象,test-queue为消息队列的唯一标识</span></span><br><span class="line"><span class="type">Queue</span> <span class="variable">queue</span> <span class="operator">=</span> session.createQueue(<span class="string">&quot;test-queue&quot;</span>);</span><br><span class="line"><span class="comment">//6、创建消息生产者对象</span></span><br><span class="line"><span class="type">MessageProductor</span> <span class="variable">producer</span> <span class="operator">=</span> session.createProducer(queue);</span><br><span class="line"><span class="comment">//7、创建文本消息</span></span><br><span class="line"><span class="type">TextMessage</span> <span class="variable">textMessage</span> <span class="operator">=</span> session.createTextMessage(<span class="string">&quot;ActiveMQ消息测试！&quot;</span>);</span><br><span class="line"><span class="comment">//8、使用生产者发送消息</span></span><br><span class="line">producer.send(textMessage);</span><br><span class="line"><span class="comment">//9、关闭资源</span></span><br><span class="line">producer.close();</span><br><span class="line">session.close();</span><br><span class="line">connection.close();</span><br></pre></td></tr></table></figure>
-
-<p>(3)消息消费者</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//1、创建连接工厂</span></span><br><span class="line"><span class="type">ActiveMQConnectionFactory</span> <span class="variable">connectionFactory</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ActiveMQConnectionFactory</span>(<span class="string">&quot;tcp://192.168.25.133:61616&quot;</span>);</span><br><span class="line"><span class="comment">//2、获取连接</span></span><br><span class="line"><span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> connectionFactory.createConnection();</span><br><span class="line"><span class="comment">//3、启动连接</span></span><br><span class="line">connection.start();</span><br><span class="line"><span class="comment">//4、获取session</span></span><br><span class="line"><span class="type">Session</span> <span class="variable">session</span> <span class="operator">=</span> connection.createSession(<span class="literal">false</span>,Session.AUTO_ACKNOWLEDGE);</span><br><span class="line"><span class="comment">//5、创建队列对象</span></span><br><span class="line"><span class="type">Queue</span> <span class="variable">queue</span> <span class="operator">=</span> session.createQueue(<span class="string">&quot;test-queue&quot;</span>);</span><br><span class="line"><span class="comment">//6、创建消息消费者对象</span></span><br><span class="line"><span class="type">MessageConsumer</span> <span class="variable">consumer</span> <span class="operator">=</span> session.createConsumer(queue);</span><br><span class="line"><span class="comment">//7、接收消息</span></span><br><span class="line">consumer.setMessageListener(<span class="keyword">new</span> <span class="title class_">MessageListener</span>()&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onMessage</span><span class="params">(Message message)</span>&#123;</span><br><span class="line">        <span class="comment">//获取文本消息对象</span></span><br><span class="line">        <span class="type">TextMessage</span> <span class="variable">textMessage</span> <span class="operator">=</span> (TextMessage)message;</span><br><span class="line">        <span class="keyword">try</span>&#123;</span><br><span class="line">            <span class="type">String</span> <span class="variable">text</span> <span class="operator">=</span> textMEssage.getText();<span class="comment">//提取文本</span></span><br><span class="line">            System.out.println(text);</span><br><span class="line">        &#125;<span class="keyword">catch</span>(JMSException e)&#123;</span><br><span class="line">           ·····</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br><span class="line"><span class="comment">//8、等待键盘输入，以阻塞线程，是线程保持监听状态</span></span><br><span class="line">System.in.read();</span><br><span class="line"><span class="comment">//9、关闭资源</span></span><br><span class="line">consumer.close();</span><br><span class="line">session.close();</span><br><span class="line">connection.close();</span><br></pre></td></tr></table></figure>
-
-<h4 id="发布-订阅模式"><a href="#发布-订阅模式" class="headerlink" title="发布&#x2F;订阅模式"></a>发布&#x2F;订阅模式</h4><p>(1)创建消息生产者</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//1、创建连接工厂</span></span><br><span class="line"><span class="type">ActiveMQConnectionFactory</span> <span class="variable">connectionFactory</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ActiveMQConnectionFactory</span>(<span class="string">&quot;tcp://192.168.25.133:61616&quot;</span>);</span><br><span class="line"><span class="comment">//2、创建连接</span></span><br><span class="line"><span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> connectionFactory.createConnection();</span><br><span class="line"><span class="comment">//3、启动连接</span></span><br><span class="line">connection.start();</span><br><span class="line"><span class="comment">//4、创建会话</span></span><br><span class="line"><span class="type">Session</span> <span class="variable">session</span> <span class="operator">=</span> connection.createSession(<span class="literal">false</span>, Session.AUTO_ACKNOWLEDGE);</span><br><span class="line"><span class="comment">//5、创建一个订阅topic</span></span><br><span class="line"><span class="type">Topic</span> <span class="variable">topic</span> <span class="operator">=</span> session.createTopic(<span class="string">&quot;text-topic&quot;</span>);</span><br><span class="line"><span class="comment">//6、创建消息生产者</span></span><br><span class="line"><span class="type">MessageProducer</span> <span class="variable">producer</span> <span class="operator">=</span> session.CreateProducer(topic);</span><br><span class="line"><span class="comment">//7、创建消息</span></span><br><span class="line"><span class="type">TextMessage</span> <span class="variable">textMessage</span> <span class="operator">=</span> session.createTextMEssage(<span class="string">&quot;这是一个topic消息测试&quot;</span>);</span><br><span class="line"><span class="comment">//8、发送消息</span></span><br><span class="line">producer.send(textMessage);</span><br><span class="line"><span class="comment">//9、关闭资源</span></span><br><span class="line">producer.close();</span><br><span class="line">session.close();</span><br><span class="line">connection.close();</span><br></pre></td></tr></table></figure>
-<p>(2)创建消息消费者</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">//1.创建连接工厂</span></span><br><span class="line">ActiveMQConnectionFactory connectionFactory=<span class="keyword">new</span></span><br><span class="line"><span class="title class_">ActiveMQConnectionFactory</span>(<span class="string">&quot;tcp://192.168.25.133:61616&quot;</span>);</span><br><span class="line"><span class="comment">//2.获取连接</span></span><br><span class="line"><span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> connectionFactory.createConnection();</span><br><span class="line"><span class="comment">//3.启动连接</span></span><br><span class="line">connection.start();</span><br><span class="line"><span class="comment">//4.获取 session</span></span><br><span class="line"><span class="type">Session</span> <span class="variable">session</span> <span class="operator">=</span> connection.createSession(<span class="literal">false</span>, Session.AUTO_ACKNOWLEDGE);</span><br><span class="line"><span class="comment">//5.创建主题对象</span></span><br><span class="line"><span class="type">Topic</span> <span class="variable">topic</span> <span class="operator">=</span> session.createTopic(<span class="string">&quot;test-topic&quot;</span>);</span><br><span class="line"><span class="comment">//6.创建消息消费者</span></span><br><span class="line">MessageConsumer consumer=session.createConsumer(topic);</span><br><span class="line"><span class="comment">//7、接收消息</span></span><br><span class="line">consumer.setMessageListener(<span class="keyword">new</span> <span class="title class_">MessageListener</span>()&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onMessage</span><span class="params">(Message message)</span>&#123;</span><br><span class="line">        <span class="type">TextMessage</span> <span class="variable">textMessage</span> <span class="operator">=</span> (TextMessage)message;</span><br><span class="line">        <span class="keyword">try</span>&#123;</span><br><span class="line">            <span class="type">String</span> <span class="variable">text</span> <span class="operator">=</span> textMessage.getText();</span><br><span class="line">            System.out.println(text);</span><br><span class="line">        &#125;<span class="keyword">catch</span>()&#123;</span><br><span class="line">            ·······</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br><span class="line"><span class="comment">//8、等待键盘输入</span></span><br><span class="line">System.in.read();</span><br><span class="line"><span class="comment">//9、关闭资源</span></span><br><span class="line">consumer.close();</span><br><span class="line">session.close();</span><br><span class="line">connection.close();</span><br></pre></td></tr></table></figure>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/10/22/activemq/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -1323,7 +1120,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-12-16 01:47:51" itemprop="dateModified" datetime="2023-12-16T01:47:51+08:00">2023-12-16</time>
+                <time title="修改时间：2023-12-16 01:52:31" itemprop="dateModified" datetime="2023-12-16T01:52:31+08:00">2023-12-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
