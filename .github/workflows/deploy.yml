@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@main
       with:
         submodules: true
 
@@ -34,9 +34,9 @@ jobs:
       run: |
         npm install -g hexo-cli
         npm install
-        npm install hexo-generator-searchdb --save
-        npm install hexo-generator-sitemap --save
-        npm install hexo-symbols-count-time --save
+        npm install -g hexo-generator-searchdb --save
+        npm install -g hexo-generator-sitemap --save
+        npm install -g hexo-symbols-count-time --save
 
     - name: Generate files
       # 编译 markdown 文件
