@@ -36,13 +36,13 @@ keepalived的核心，负责主进程的启动、维护以及全局配置文件�
 
 初始状态：
 >
-![](https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/keep1.bmp)
+![初始状态](/images/keep1.bmp)
 
 主机状态：
 >
-![](https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/keep2.bmp)
+![主机状态](/images/keep2.bmp)
 
 主机恢复：
 >
-![](https://github.com/wangfanming/wangfanming.GitHub.io/blob/master/image/keep3.bmp)
+![主机恢复](/images/keep3.bmp)
 
