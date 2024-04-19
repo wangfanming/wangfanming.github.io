@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.wfanming.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":10,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Docker容器技术 &emsp;&emsp;容器技术相比于管理程序虚拟化(hypervisor virtualization，HV)的不同之处在于，管理程序虚拟化通过中间层将一台或者多台独立的机器虚拟运行与物理硬件之上，而容器则是直接运行在操作系统内核之上的用户空间。因此，容器虚拟化也被称为“操作系统级虚拟化”，容器技术可以让多个独立用户空间运行在同一台宿主机上。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker容器技术">
+<meta property="og:url" content="https://www.wfanming.top/2019/08/28/docker%E5%AE%B9%E5%99%A8/index.html">
+<meta property="og:site_name" content="Duncan&#39;s Blog">
+<meta property="og:description" content="Docker容器技术 &emsp;&emsp;容器技术相比于管理程序虚拟化(hypervisor virtualization，HV)的不同之处在于，管理程序虚拟化通过中间层将一台或者多台独立的机器虚拟运行与物理硬件之上，而容器则是直接运行在操作系统内核之上的用户空间。因此，容器虚拟化也被称为“操作系统级虚拟化”，容器技术可以让多个独立用户空间运行在同一台宿主机上。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.wfanming.top/images/docker%E9%95%9C%E5%83%8F%E7%9A%84%E7%BB%93%E6%9E%84.bmp">
+<meta property="og:image" content="https://www.wfanming.top/images/%E5%88%97%E5%87%BAdocker%E4%B8%8B%E7%9A%84%E9%95%9C%E5%83%8F%E4%BF%A1%E6%81%AF.bmp">
+<meta property="og:image" content="https://www.wfanming.top/images/%E6%90%9C%E7%B4%A2%E9%95%9C%E5%83%8F.bmp">
+<meta property="og:image" content="https://www.wfanming.top/images/%E8%BF%9E%E6%8E%A5%E5%AE%B9%E5%99%A8%E5%86%85mysql.bmp">
+<meta property="og:image" content="https://www.wfanming.top/images/%E6%9F%A5%E7%9C%8B%E5%AE%B9%E5%99%A8%E8%BF%90%E8%A1%8C%E6%83%85%E5%86%B5.bmp">
+<meta property="article:published_time" content="2019-08-28T02:53:31.000Z">
+<meta property="article:modified_time" content="2023-12-15T17:15:39.066Z">
+<meta property="article:author" content="Wang Fanming">
+<meta property="article:tag" content="虚拟化">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.wfanming.top/images/docker%E9%95%9C%E5%83%8F%E7%9A%84%E7%BB%93%E6%9E%84.bmp">
+
+<link rel="canonical" href="https://www.wfanming.top/2019/08/28/docker%E5%AE%B9%E5%99%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Docker容器技术 | Duncan's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Duncan's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">何以解忧，唯有学习</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/wangfanming" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2019/08/28/docker%E5%AE%B9%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Wang Fanming">
+      <meta itemprop="description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Duncan's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Docker容器技术
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-28 10:53:31" itemprop="dateCreated datePublished" datetime="2019-08-28T10:53:31+08:00">2019-08-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-12-16 01:15:39" itemprop="dateModified" datetime="2023-12-16T01:15:39+08:00">2023-12-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Docker"><a href="#Docker" class="headerlink" title="Docker"></a>Docker</h1><h2 id="容器技术"><a href="#容器技术" class="headerlink" title="容器技术"></a>容器技术</h2><blockquote>
+<p>&emsp;&emsp;容器技术相比于管理程序虚拟化(hypervisor virtualization，HV)的不同之处在于，<br>管理程序虚拟化通过中间层将一台或者多台独立的机器虚拟运行与物理硬件之上，而容器则是直接运行在<br>操作系统内核之上的用户空间。因此，容器虚拟化也被称为“操作系统级虚拟化”，容器技术可以让多个<br>独立用户空间运行在同一台宿主机上。</p>
+</blockquote>
+<span id="more"></span>
+<blockquote>
+<p>&emsp;&emsp;由于容器依赖于操作系统，采用的是<strong>共享内核</strong>的运行方式，所以容器只能运行与底层宿主机相同或者相似的操作系统。</p>
+</blockquote>
+<blockquote>
+<p>&emsp;&emsp;相对于彻底隔离的HV，容器被认为是不安全的。容器采用的是沙盒机制，其底层仍需<br>调用操作系统的接口来实现自身的功能，所以不能完全与宿主机系统完全隔离，会有潜在的风险。</p>
+</blockquote>
+<blockquote>
+<p>&emsp;&emsp; 尽管有诸多的局限性，容器还是被广泛部署于各种各样的应用场合。在差大规模的多<br>租户服务部署、轻量级沙盒以及对安全要求不太高的隔离环境中，容器技术非常流行。</p>
+</blockquote>
+<blockquote>
+<p>&emsp;&emsp;最新的容器技术引入了OpenVZ，Solaris Zones以及Linux容器(LXC)。使用这些新技<br>术，容器不再仅仅是一个单独的运行环境。在自己的权限内，容器更像一个完整的宿主机。对Dockers来<br>说，它得益于现代Linux特性，如控件组(control group)，命名空间(namespace)技术，容器和宿主机<br>之间的隔离更加彻底，容器有独立的网络和存储栈，还拥有自己的资源管理能力，使得同一台宿主机中的<br>多个容器可以友好的共存。</p>
+</blockquote>
+<blockquote>
+<p>&emsp;&emsp;和传统的虚拟化以及半虚拟化相比，容器不需要模拟层(emulation layer)和管理层<br>(hypervisor layer)，而是使用操作系统的系统调用接口，这降低了运行单个容器所需的开销，也使得<br>宿主机中可以运行更多的容器。</p>
+</blockquote>
+<hr>
+<h3 id="容器与虚拟机的比较"><a href="#容器与虚拟机的比较" class="headerlink" title="容器与虚拟机的比较"></a>容器与虚拟机的比较</h3><p>1、本质区别</p>
+<blockquote>
+<p>虚拟机依赖于<strong>hypervisor</strong>，在虚拟机使用硬件资源时，由hypervisor统一调度、分配，而容器是运行在<br>操作系统之上的一个隔离环境，可以认为是一个独立的进程，容器内的应用程序使用的其实是操作系统分<br>配给该容器的计算资源。</p>
+</blockquote>
+<p>2、资源使用率</p>
+<blockquote>
+<p>相比于虚拟机，容器因为采用的是<strong>共享内核</strong>的工作方式，所以<strong>容器可以看成是一个组装好了一套特定<br>应用程序的虚拟机，直接利用宿主机的内核，完成相应操作的虚拟机</strong>。正式由于这个特性，使得容器抽象层<br>比虚拟机更少，更加轻量化，启动速度更快。但是带来的弊端也是显而易见的，共享内核的机制使得容器受制于<br>操作系统，并且安全性得不到足够的保证。而虚拟机则是牺牲一部分性能，获得的是完整的隔离性，使得虚拟机的<br>安全性大大提高，可移植性也更强。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>对比项</th>
+<th align="center">docker</th>
+<th align="right">虚拟化</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>快速创建、删除</td>
+<td align="center">启动应用</td>
+<td align="right">启动GuestOS + 启动应用</td>
+</tr>
+<tr>
+<td>交付、部署</td>
+<td align="center">容器镜像</td>
+<td align="right">虚拟机镜像</td>
+</tr>
+<tr>
+<td>单节点密度</td>
+<td align="center">100~1000</td>
+<td align="right">10~100</td>
+</tr>
+<tr>
+<td>更新管理</td>
+<td align="center">迭代式更新，修改Dockerfile，对增量内容进行分发、存储、传输、节点启动和恢复迅速</td>
+<td align="right">向虚拟机推送安装、升级应用软件补丁包</td>
+</tr>
+<tr>
+<td>稳定性</td>
+<td align="center">每月更新一个版本</td>
+<td align="right">KVM、Xen、VMware都已经很稳定</td>
+</tr>
+<tr>
+<td>安全性</td>
+<td align="center">Docker具有宿主机root权限</td>
+<td align="right">硬件隔离：Guest OS运行在非根模式</td>
+</tr>
+<tr>
+<td>监控成熟程度</td>
+<td align="center">还在发展中</td>
+<td align="right">Host、Hypervisor,VM的监控工具在生产环境已使用多年</td>
+</tr>
+<tr>
+<td>高可用性</td>
+<td align="center">通过业务本身的高可用性来保证</td>
+<td align="right">快照、克隆、HA、动态迁移、异地容灾、异地双活</td>
+</tr>
+<tr>
+<td>管理平台成熟度</td>
+<td align="center">以k8s为代表，还在快速发展过程中</td>
+<td align="right">以Openstack、vCenter、OPV-Suite为代表，已经在生产环境使用多年</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="Docker特点"><a href="#Docker特点" class="headerlink" title="Docker特点"></a>Docker特点</h2><p>1、上手快</p>
+<p>&emsp;&emsp;Docker依赖于“写时复制”(copy-on-write)模型，使得修改应用很快。然后就可以创建容器来运行应用程序。</p>
+<p>2、职责的逻辑分类</p>
+<p>&emsp;&emsp;使用Docker，开发人员只需关心容器内的应用程序，而运维人员只需要关系如何管理容器。Docker加强了开发人员写代码时的<br>开发环境与应用程序部署的生产环境的一致性。降低了“开发时一切正常，上线出问题”的环境问题发生概率。</p>
+<p>3、快速高效的开发生命周期</p>
+<p>&emsp;&emsp;缩短代码从开发、 测试到部署、 上线运行的周期， 让应用程序具备可移植性， 易于构建， 并易于协作。</p>
+<p>4、鼓励使用面向服务的架构</p>
+<p>&emsp;&emsp;Docker推荐单个容器只运行一个应用程序或进程，这样就形成了一个分布式的应用程序模型。在这种模型下，应用程序<br>或者服务都可以表示为一系列内部互联的容器，从而使得分布式部署应用程序，扩展或调试应用程序都变得简单，同时也提高了程序的内省性。</p>
+<h2 id="Docker组件"><a href="#Docker组件" class="headerlink" title="Docker组件"></a>Docker组件</h2><h5 id="Docker客户端和服务器"><a href="#Docker客户端和服务器" class="headerlink" title="Docker客户端和服务器"></a>Docker客户端和服务器</h5><p>&emsp;&emsp;Docker是一个C&#x2F;S架构程序。Docker客户端只需要Docker服务器或者守护进程发出请求，服务器或者守护进程将完成所有工作<br>并返回结果。Docker提供了一个命令行工具Docker以及一套RESTful API。</p>
+<h5 id="Docker镜像"><a href="#Docker镜像" class="headerlink" title="Docker镜像"></a>Docker镜像</h5><p>&emsp;&emsp;镜像是构建Docker的基石。镜像是基于联合文件系统的一种层式结构，有一系列指令一步步构建出来。镜像体积很小，非常“便捷”，<br>易于分享、存储和更新。</p>
+<h5 id="Registry-注册中心"><a href="#Registry-注册中心" class="headerlink" title="Registry(注册中心)"></a>Registry(注册中心)</h5><p>&emsp;&emsp;Docker用Registry来保存用户构建的镜像。Registry分为公共和私有两种。Docker公司运营公共的Registry叫做Docker Hub。</p>
+<h5 id="Docker容器"><a href="#Docker容器" class="headerlink" title="Docker容器"></a>Docker容器</h5><p>&emsp;&emsp;Docker可以帮助你构建和部署容器，我们只需把自己的应用程序或者服务打包进容器即可。容器是基于镜像启动起来的，容器中<br>可以运行一个或多个进程。我们可以认为，镜像是Docker生命周期中的构建或者打包阶段，而容器则是启动或者执行阶段。容器基于景象启动，<br>一旦容器启动完成，我们就可以登录到容器中安装自己需要的软件或者服务。</p>
+<h2 id="Docker可以做什么"><a href="#Docker可以做什么" class="headerlink" title="Docker可以做什么"></a>Docker可以做什么</h2><ul>
+<li><p>加速本地开发和构建流程，使其更加高效，更加轻量化。本地人员可以构建、运行并分享Docker容器。容器可以在开发环境中构建，然后提交到测试环境，<br>并最终部署至生产环境。</p>
+</li>
+<li><p>能够让独立的服务或应用程序在不同的环境中，得到相同的运行结果。这一点在面向服务和重度依赖微服务的部署尤为适用。</p>
+</li>
+<li><p>用docker创建隔离的环境来进行测试。例如，用Jenkins CI这样的持续集成工具启动一个用于测试的容器。</p>
+</li>
+<li><p>Docker 可以让开发者现在本机上构建一个复杂的程序或者架构来进行测试，而不是一开始就在生产环境部署、测试。</p>
+</li>
+</ul>
+<hr>
+<h2 id="Docker安装与启动"><a href="#Docker安装与启动" class="headerlink" title="Docker安装与启动"></a>Docker安装与启动</h2><h4 id="安装Docker"><a href="#安装Docker" class="headerlink" title="安装Docker"></a>安装Docker</h4><p>1、使用yum命令在线安装</p>
+<blockquote>
+<p><code>yum install docker</code></p>
+</blockquote>
+<p>2、查看docker版本</p>
+<blockquote>
+<p><code>docker -v</code></p>
+</blockquote>
+<h4 id="启动与停止docker"><a href="#启动与停止docker" class="headerlink" title="启动与停止docker"></a>启动与停止docker</h4><ul>
+<li><p>启动docker:  <code>systemctl start docker</code></p>
+</li>
+<li><p>停止docker:  <code>systemctl stop docker</code></p>
+</li>
+<li><p>重启docker: <code>systemctl restart docker</code></p>
+</li>
+<li><p>查看docker状态：<code>systemctl status docker</code></p>
+</li>
+<li><p>开机启动： <code>systemctl enable docker</code></p>
+</li>
+</ul>
+<p><strong>systemctl命令是系统服务管理器指令，是service和chkconfig两个命令的组合</strong></p>
+<h4 id="Docker镜像的结构"><a href="#Docker镜像的结构" class="headerlink" title="Docker镜像的结构"></a>Docker镜像的结构</h4><p><img src="/images/docker%E9%95%9C%E5%83%8F%E7%9A%84%E7%BB%93%E6%9E%84.bmp" alt="docker镜像的结构"></p>
+<h4 id="列出镜像"><a href="#列出镜像" class="headerlink" title="列出镜像"></a>列出镜像</h4><p>列出docker下的所有镜像：<code>docker images</code></p>
+<p><img src="/images/%E5%88%97%E5%87%BAdocker%E4%B8%8B%E7%9A%84%E9%95%9C%E5%83%8F%E4%BF%A1%E6%81%AF.bmp" alt="docker下的镜像信息"></p>
+<ul>
+<li><p>REPOSITORY： 镜像所在的仓库名称</p>
+</li>
+<li><p>TAG： 镜像标签(可以直观地理解为镜像的版本号)</p>
+</li>
+<li><p>IMAGE ID： 镜像 ID(镜像的唯一标识)</p>
+</li>
+<li><p>CREATED： 镜像的创建日期（不是获取该镜像的日期，是镜像在构建成功时的时间）</p>
+</li>
+<li><p>SIZE： 镜像大小</p>
+</li>
+</ul>
+<p>这些镜像都存储在宿主机的&#x2F;var&#x2F;lib&#x2F;docker目录下。</p>
+<blockquote>
+<p>我们在运行同一个仓库中的不同镜像时， 可以通过在仓库名后面加上一个冒号和标签名<br>来指定该仓库中的某一具体的镜像， 例如 <code>docker run --name custom_container_name –i –t docker.io/ubunto:12.04 /bin/bash</code>， 表明从镜像 Ubuntu:12.04 启动一个容器， 而这个镜像的操<br>作系统就是 Ubuntu:12.04。 在构建容器时指定仓库的标签也是一个好习惯。</p>
+</blockquote>
+<h4 id="配置Dcoker的镜像源"><a href="#配置Dcoker的镜像源" class="headerlink" title="配置Dcoker的镜像源"></a>配置Dcoker的镜像源</h4><p>1、编辑<code>/etc/docker/daemon.json</code>,不存在就手动创建。</p>
+<p>2、在该文件中输入如下内容：</p>
+<blockquote>
+<p><code>&#123;   &quot;registry-mirrors&quot;: [&quot;https://docker.mirrors.ustc.edu.cn&quot;]   &#125;</code></p>
+</blockquote>
+<p>3、重启docker服务</p>
+<h4 id="拉取、搜索、删除镜像"><a href="#拉取、搜索、删除镜像" class="headerlink" title="拉取、搜索、删除镜像"></a>拉取、搜索、删除镜像</h4><p>1、拉取镜像</p>
+<p><code>docker pull 镜像名称</code></p>
+<p>2、搜索镜像<br><code>docker search 镜像名称</code> ，例如：<code>docker search tomcat</code></p>
+<p><img src="/images/%E6%90%9C%E7%B4%A2%E9%95%9C%E5%83%8F.bmp" alt="image/搜索镜像"></p>
+<ul>
+<li>NAME： 仓库名称</li>
+<li>DESCRIPTION： 镜像描述</li>
+<li>STARS： 用户评价， 反应一个镜像的受欢迎程度</li>
+<li>OFFICIAL： 是否官方</li>
+<li>AUTOMATED： 自动构建， 表示该镜像由 Docker Hub 自动构建流程创建的</li>
+</ul>
+<p>3、删除</p>
+<ul>
+<li><p>删除指定镜像<br><code>docker rmi 镜像ID</code></p>
+</li>
+<li><p>删除所有镜像</p>
+<blockquote>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker rmi `docker image -q`</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="Docker容器操作"><a href="#Docker容器操作" class="headerlink" title="Docker容器操作"></a>Docker容器操作</h2><p>1、创建容器</p>
+<p>&emsp;&emsp;命令:<code>docker run</code></p>
+<p>&emsp;&emsp;命令参数说明：</p>
+<ul>
+<li><code>-i</code>: 表示以“交互模式”运行容器（类似于redis的前端启动）</li>
+<li><code>-t</code>:表示容器启动后进入其命令行。加入这两个参数后，容器创建就能登陆进去，即分配<br>一个伪终端。</li>
+<li><code>--name</code> :为创建的容器命名。</li>
+<li><code>-v</code>:表示目录映射关系(前者是宿主机目录，后者是容器中映射到宿主机上的目录)，<br>可以使用多个<code>-v</code>做多个目录或文件映射。<strong>注意：最好做目录映射，在宿主机上做修改，然后共享到容器上</strong>。</li>
+<li><code>-d</code>:在<code>run</code>后边加上<code>-d</code>参数，则会创建一个守护式容器在后台运行。（类似于redis的后端启动）</li>
+<li><code>-p</code>:表示端口映射，前者是宿主机端口，后者是容器内的映射端口。也可以像<code>-v</code>一样做多个端口映射。</li>
+</ul>
+<p>2、查看容器</p>
+<ul>
+<li>查看所有的容器(历史启动过的容器)：<code>docker ps -a</code></li>
+<li>查看最后一次运行的容器：<code>docker ps -l</code></li>
+<li>查看正在运行的容器：<code>docker ps</code></li>
+</ul>
+<p>3、停止与启动容器</p>
+<ul>
+<li>停止正在运行的容器：<code>docker stop $CONTAINER_NAME/ID</code></li>
+<li>启动已运行过的容器：<code>docker start $CONTAINER_NAME/ID</code></li>
+</ul>
+<p>4、删除容器</p>
+<ul>
+<li>删除指定的容器：<code>docker rm $CONTAINER_ID/NAME</code></li>
+<li>删除所有容器：<blockquote>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker rm `docker ps -a -q`</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="Docker部署应用-示例"><a href="#Docker部署应用-示例" class="headerlink" title="Docker部署应用(示例)"></a>Docker部署应用(示例)</h2><p>1、拉取MySQL镜像</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker pull mysql</span><br></pre></td></tr></table></figure>
+<p>2、创建MySQL容器</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker run --name pinyougoou_mysql -p 33306:3306 -e MYSQL_ROOT_PASSWORD=123456</span><br><span class="line">-di mysql</span><br></pre></td></tr></table></figure>
+<p>3、进入MySQL容器，并登录</p>
+<p>进入容器</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker exec -it pinyougou_mysql /bin/bash</span><br></pre></td></tr></table></figure>
+<p>登陆MySQL</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">mysql -uroot -p</span><br></pre></td></tr></table></figure>
+
+<p>4、远程登陆MySQL</p>
+<p>原理:利用容器启动时的端口映射，我们只需要在Navicat上连接虚拟机的<code>33306</code>端口，<br>即可映射至容器内的3306端口，连接上容器内的MySQL，然后就可以像操作普通MySQL数据库<br>一样，对容器内MySQL数据库进行操作。</p>
+<p><img src="/images/%E8%BF%9E%E6%8E%A5%E5%AE%B9%E5%99%A8%E5%86%85mysql.bmp" alt="连接容器内mysql"></p>
+<p>5、查看容器IP地址</p>
+<p>以下命令可以查看容器运行的各种数据：</p>
+<p><code>docker inspect pinyougou_mysql</code></p>
+<p><img src="/images/%E6%9F%A5%E7%9C%8B%E5%AE%B9%E5%99%A8%E8%BF%90%E8%A1%8C%E6%83%85%E5%86%B5.bmp" alt="查看容器运行情况"></p>
+<p>也可以使用以下命令直接输出IP地址：</p>
+<p><code>docker inspect --format=&#39;&#123;&#123;.NetworkSettings.IPAddress&#125;&#125;&#39; mysql_pinyougou</code></p>
+<p><strong>这个IP地址是由docker的服务端维护的，可以用于该服务端下所有客户端的通信</strong>。</p>
+<hr>
+<h2 id="备份与迁移"><a href="#备份与迁移" class="headerlink" title="备份与迁移"></a>备份与迁移</h2><h4 id="将容器保存成镜像"><a href="#将容器保存成镜像" class="headerlink" title="将容器保存成镜像"></a>将容器保存成镜像</h4><blockquote>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker commit pinyougou_mysql myMysql</span><br></pre></td></tr></table></figure>
+<ul>
+<li>pinyougou_mysql 是容器名称</li>
+<li>myMysql是新的镜像名称</li>
+</ul>
+<h4 id="镜像备份"><a href="#镜像备份" class="headerlink" title="镜像备份"></a>镜像备份</h4><blockquote>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker save -o /home/myMysql.tar myMysql</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>-o</code> ：指定了<code>myMysql</code>镜像的备份文件的位置</li>
+</ul>
+<h4 id="镜像的恢复与迁移"><a href="#镜像的恢复与迁移" class="headerlink" title="镜像的恢复与迁移"></a>镜像的恢复与迁移</h4><blockquote>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">docker load -i /home/myMysql.tar</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>-i</code>：加载的备份文件的路径</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%99%9A%E6%8B%9F%E5%8C%96/" rel="tag"># 虚拟化</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/05/28/%E7%BD%91%E7%AB%99%E6%B5%81%E9%87%8F%E6%97%A5%E5%BF%97%E6%95%B0%E6%8D%AE%E8%87%AA%E5%AE%9A%E4%B9%89%E9%87%87%E9%9B%86/" rel="prev" title="网站流量日志数据自定义采集">
+      <i class="fa fa-chevron-left"></i> 网站流量日志数据自定义采集
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/02/15/%E4%BD%BF%E7%94%A8Hexo%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2%E7%B3%BB%E7%BB%9F/" rel="next" title="使用Hexo搭建博客系统">
+      使用Hexo搭建博客系统 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Docker"><span class="nav-number">1.</span> <span class="nav-text">Docker</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E6%8A%80%E6%9C%AF"><span class="nav-number">1.1.</span> <span class="nav-text">容器技术</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E4%B8%8E%E8%99%9A%E6%8B%9F%E6%9C%BA%E7%9A%84%E6%AF%94%E8%BE%83"><span class="nav-number">1.1.1.</span> <span class="nav-text">容器与虚拟机的比较</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker%E7%89%B9%E7%82%B9"><span class="nav-number">1.2.</span> <span class="nav-text">Docker特点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker%E7%BB%84%E4%BB%B6"><span class="nav-number">1.3.</span> <span class="nav-text">Docker组件</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Docker%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%92%8C%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="nav-number">1.3.0.0.1.</span> <span class="nav-text">Docker客户端和服务器</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Docker%E9%95%9C%E5%83%8F"><span class="nav-number">1.3.0.0.2.</span> <span class="nav-text">Docker镜像</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Registry-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83"><span class="nav-number">1.3.0.0.3.</span> <span class="nav-text">Registry(注册中心)</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Docker%E5%AE%B9%E5%99%A8"><span class="nav-number">1.3.0.0.4.</span> <span class="nav-text">Docker容器</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker%E5%8F%AF%E4%BB%A5%E5%81%9A%E4%BB%80%E4%B9%88"><span class="nav-number">1.4.</span> <span class="nav-text">Docker可以做什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker%E5%AE%89%E8%A3%85%E4%B8%8E%E5%90%AF%E5%8A%A8"><span class="nav-number">1.5.</span> <span class="nav-text">Docker安装与启动</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Docker"><span class="nav-number">1.5.0.1.</span> <span class="nav-text">安装Docker</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E4%B8%8E%E5%81%9C%E6%AD%A2docker"><span class="nav-number">1.5.0.2.</span> <span class="nav-text">启动与停止docker</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Docker%E9%95%9C%E5%83%8F%E7%9A%84%E7%BB%93%E6%9E%84"><span class="nav-number">1.5.0.3.</span> <span class="nav-text">Docker镜像的结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%97%E5%87%BA%E9%95%9C%E5%83%8F"><span class="nav-number">1.5.0.4.</span> <span class="nav-text">列出镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEDcoker%E7%9A%84%E9%95%9C%E5%83%8F%E6%BA%90"><span class="nav-number">1.5.0.5.</span> <span class="nav-text">配置Dcoker的镜像源</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8B%89%E5%8F%96%E3%80%81%E6%90%9C%E7%B4%A2%E3%80%81%E5%88%A0%E9%99%A4%E9%95%9C%E5%83%8F"><span class="nav-number">1.5.0.6.</span> <span class="nav-text">拉取、搜索、删除镜像</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker%E5%AE%B9%E5%99%A8%E6%93%8D%E4%BD%9C"><span class="nav-number">1.6.</span> <span class="nav-text">Docker容器操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker%E9%83%A8%E7%BD%B2%E5%BA%94%E7%94%A8-%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.7.</span> <span class="nav-text">Docker部署应用(示例)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%87%E4%BB%BD%E4%B8%8E%E8%BF%81%E7%A7%BB"><span class="nav-number">1.8.</span> <span class="nav-text">备份与迁移</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B0%86%E5%AE%B9%E5%99%A8%E4%BF%9D%E5%AD%98%E6%88%90%E9%95%9C%E5%83%8F"><span class="nav-number">1.8.0.1.</span> <span class="nav-text">将容器保存成镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%95%9C%E5%83%8F%E5%A4%87%E4%BB%BD"><span class="nav-number">1.8.0.2.</span> <span class="nav-text">镜像备份</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%95%9C%E5%83%8F%E7%9A%84%E6%81%A2%E5%A4%8D%E4%B8%8E%E8%BF%81%E7%A7%BB"><span class="nav-number">1.8.0.3.</span> <span class="nav-text">镜像的恢复与迁移</span></a></li></ol></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Wang Fanming</p>
+  <div class="site-description" itemprop="description">吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wangfanming" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wangfanming" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/wangfanming1204@gmail.com" title="E-Mail → wangfanming1204@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Wang Fanming</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">80k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">1:13</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
