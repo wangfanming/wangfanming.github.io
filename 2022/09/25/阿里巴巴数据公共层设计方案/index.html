@@ -20,26 +20,23 @@
     var CONFIG = {"hostname":"www.wfanming.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":10,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="JVM的知识点总结简介JVM作为Java的基石，掌握其运行原理，有助于我们深入理解这门语言的设计初衷，更好的把握我们写下的每一行代码。内容包括：JVM运行时区域、垃圾回收、垃圾回收器、Hotspot算法实现过程、类加载机制、Hotspot对象">
+  <meta name="description" content="阿里数据公共层设计方案理论​		阿里数据公共层设计理念遵循维度建模思想。数据模型的维度设计主要以维度建模理论为基础，基于维度数据模型总线架构，构建一致性的维度和事实。 模型层次​		阿里的数据模型三层架构：操作数据层（ODS）、公共维度模型层（CDM）、应用数据层（ADS）。 其中公共维度模型层包括明细数据层（DWD）和汇总数据层（DWS）。模型层次关系如下：  操作数据层（ODS）：保存系统内的">
 <meta property="og:type" content="article">
-<meta property="og:title" content="JVM的知识点总结">
-<meta property="og:url" content="https://www.wfanming.top/2022/10/02/JVM%E7%9A%84%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93/index.html">
+<meta property="og:title" content="OneData数据治理方法论-阿里数据公共层设计方案">
+<meta property="og:url" content="https://www.wfanming.top/2022/09/25/%E9%98%BF%E9%87%8C%E5%B7%B4%E5%B7%B4%E6%95%B0%E6%8D%AE%E5%85%AC%E5%85%B1%E5%B1%82%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88/index.html">
 <meta property="og:site_name" content="Duncan&#39;s Blog">
-<meta property="og:description" content="JVM的知识点总结简介JVM作为Java的基石，掌握其运行原理，有助于我们深入理解这门语言的设计初衷，更好的把握我们写下的每一行代码。内容包括：JVM运行时区域、垃圾回收、垃圾回收器、Hotspot算法实现过程、类加载机制、Hotspot对象">
+<meta property="og:description" content="阿里数据公共层设计方案理论​		阿里数据公共层设计理念遵循维度建模思想。数据模型的维度设计主要以维度建模理论为基础，基于维度数据模型总线架构，构建一致性的维度和事实。 模型层次​		阿里的数据模型三层架构：操作数据层（ODS）、公共维度模型层（CDM）、应用数据层（ADS）。 其中公共维度模型层包括明细数据层（DWD）和汇总数据层（DWS）。模型层次关系如下：  操作数据层（ODS）：保存系统内的">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://www.wfanming.top/images/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F.png">
-<meta property="og:image" content="https://www.wfanming.top/images/JVM%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6.png">
-<meta property="og:image" content="https://www.wfanming.top/images/HotSpot%E7%9A%84%E7%AE%97%E6%B3%95%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82.png">
-<meta property="og:image" content="https://www.wfanming.top/images/HotSpotVM%E5%AF%B9%E8%B1%A1.png">
-<meta property="og:image" content="https://www.wfanming.top/images/JVM%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6.png">
-<meta property="article:published_time" content="2022-10-02T08:03:31.000Z">
+<meta property="og:image" content="f:\study\blog\source\images\%E9%98%BF%E9%87%8C%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B%E5%B1%82%E6%AC%A1%E5%85%B3%E7%B3%BB%E5%9B%BE.png">
+<meta property="og:image" content="f:\study\blog\source\images\%E9%98%BF%E9%87%8C%E6%A8%A1%E5%9E%8B%E6%9E%B6%E6%9E%84%E5%9B%BE.png">
+<meta property="article:published_time" content="2022-09-25T07:12:19.000Z">
 <meta property="article:modified_time" content="2024-04-21T09:28:58.708Z">
 <meta property="article:author" content="Wang Fanming">
-<meta property="article:tag" content="JVM">
+<meta property="article:tag" content="维度建模">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://www.wfanming.top/images/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F.png">
+<meta name="twitter:image" content="f:\study\blog\source\images\%E9%98%BF%E9%87%8C%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B%E5%B1%82%E6%AC%A1%E5%85%B3%E7%B3%BB%E5%9B%BE.png">
 
-<link rel="canonical" href="https://www.wfanming.top/2022/10/02/JVM%E7%9A%84%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93/">
+<link rel="canonical" href="https://www.wfanming.top/2022/09/25/%E9%98%BF%E9%87%8C%E5%B7%B4%E5%B7%B4%E6%95%B0%E6%8D%AE%E5%85%AC%E5%85%B1%E5%B1%82%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88/">
 
 
 <script id="page-configurations">
@@ -52,7 +49,7 @@
   };
 </script>
 
-  <title>JVM的知识点总结 | Duncan's Blog</title>
+  <title>OneData数据治理方法论-阿里数据公共层设计方案 | Duncan's Blog</title>
   
 
 
@@ -198,7 +195,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2022/10/02/JVM%E7%9A%84%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93/">
+    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2022/09/25/%E9%98%BF%E9%87%8C%E5%B7%B4%E5%B7%B4%E6%95%B0%E6%8D%AE%E5%85%AC%E5%85%B1%E5%B1%82%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -211,7 +208,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          JVM的知识点总结
+          OneData数据治理方法论-阿里数据公共层设计方案
         </h1>
 
         <div class="post-meta">
@@ -221,7 +218,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-10-02 16:03:31" itemprop="dateCreated datePublished" datetime="2022-10-02T16:03:31+08:00">2022-10-02</time>
+              <time title="创建时间：2022-09-25 15:12:19" itemprop="dateCreated datePublished" datetime="2022-09-25T15:12:19+08:00">2022-09-25</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -236,7 +233,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E4%BB%93%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据仓库</span></a>
                 </span>
             </span>
 
@@ -246,7 +243,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>163</span>
+              <span>1.3k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -265,14 +262,47 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="JVM的知识点总结"><a href="#JVM的知识点总结" class="headerlink" title="JVM的知识点总结"></a>JVM的知识点总结</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>JVM作为Java的基石，掌握其运行原理，有助于我们深入理解这门语言的设计初衷，更好的把握我们写下的每一行代码。内容包括：JVM运行时区域、垃圾回收、垃圾回收器、Hotspot算法实现过程、类加载机制、Hotspot对象</p>
-<span id="more"></span>
-
-<h3 id="JVM运行时区域"><a href="#JVM运行时区域" class="headerlink" title="JVM运行时区域"></a>JVM运行时区域</h3><p><img src="/images/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F.png" alt="JVM运行时区域"></p>
-<h3 id="垃圾回收"><a href="#垃圾回收" class="headerlink" title="垃圾回收"></a>垃圾回收</h3><p><img src="/images/JVM%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6.png" alt="垃圾回收"></p>
-<h3 id="HotSpot的算法实现细节"><a href="#HotSpot的算法实现细节" class="headerlink" title="HotSpot的算法实现细节"></a>HotSpot的算法实现细节</h3><p><img src="/images/HotSpot%E7%9A%84%E7%AE%97%E6%B3%95%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82.png" alt="HotSpot的算法实现细节"></p>
-<h3 id="HotSpot-VM对象"><a href="#HotSpot-VM对象" class="headerlink" title="HotSpot VM对象"></a>HotSpot VM对象</h3><p><img src="/images/HotSpotVM%E5%AF%B9%E8%B1%A1.png" alt="HotSpot VM对象"></p>
-<h3 id="类加载过程"><a href="#类加载过程" class="headerlink" title="类加载过程"></a>类加载过程</h3><p><img src="/images/JVM%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6.png" alt="类加载过程"></p>
+        <h1 id="阿里数据公共层设计方案"><a href="#阿里数据公共层设计方案" class="headerlink" title="阿里数据公共层设计方案"></a>阿里数据公共层设计方案</h1><h2 id="理论"><a href="#理论" class="headerlink" title="理论"></a>理论</h2><p>​		阿里数据公共层设计理念遵循维度建模思想。数据模型的维度设计主要以维度建模理论为基础，基于维度数据模型总线架构，构建一致性的维度和事实。</p>
+<h2 id="模型层次"><a href="#模型层次" class="headerlink" title="模型层次"></a>模型层次</h2><p>​		阿里的数据模型三层架构：操作数据层（ODS）、公共维度模型层（CDM）、应用数据层（ADS）。</p>
+<p>其中公共维度模型层包括明细数据层（DWD）和汇总数据层（DWS）。模型层次关系如下：</p>
+<p><img src="F:\study\blog\source\images\阿里数据模型层次关系图.png" alt="模型层次"></p>
+<p><strong>操作数据层（ODS）</strong>：保存系统内的原始数据。</p>
+<ul>
+<li>同步：结构化数据增量或者全量同步到MaxCompute.</li>
+<li>结构化：非结构化（日志）结构化处理并存储到MaxCompute。</li>
+<li>累计历史、清洗：根据数据业务需求及稽查和审计要求保存历史数据、清洗数据。</li>
+</ul>
+<p><strong>公共维度模型层（CDM）：</strong>存放明细事实数据、维表数据及公共指标汇总层数据，其中明细事实数据、维表数据一般根据ODS数据加工生成；公共指标汇总数据一般根据维表数据和明细事实数据加工而成。</p>
+<p>​		CDM又细分为DWD层和DWS层，分别时明细数据曾和汇总数据层，采用维度模型方法作为理论基础，更多地采用一些维度退化手法，将维度退化至事实表中，减少事实表和为表的关联，提高明细数据表的易用性；同时在数据汇总层，加强指标的维度退化，采取更多的宽表化手段构建公共指标数据层，提升公共指标的复用性，减少重复加工。其主要功能如下：</p>
+<ul>
+<li>组合相关和相似数据：采用明细宽表，服用关联计算，减少数据扫描。</li>
+<li>公共指标统一加工：基于OneData体系构建命名规范、口径一致、算法统一的统计指标，为上层数据产品、应用和服务提供公共指标来建立逻辑汇总宽表。</li>
+<li>建立一致性维度：建立一致的数据分析维表，降低数据计算口径、算法不统一的风险。</li>
+</ul>
+<p><strong>应用数据层（ADS）：</strong>存放数据产品个性化的统计指标数据，根据CDM和ODS层加工生成。</p>
+<ul>
+<li>个性化加工指标：复杂性（指数型、比值型、排名型指标）</li>
+<li>基于应用的数据组装：大宽表集市、横表转纵表、趋势指标串。</li>
+</ul>
+<p>阿里模型架构图</p>
+<p><img src="F:\study\blog\source\images\阿里模型架构图.png" alt="阿里模型架构图"></p>
+<p>​		数据调用服务优先使用公共维度模型层（CDM）数据，当公共层没有数据时，需评估是否需要创建公共层数据，当不需要公用的公共层时，才可以直接使用操作数据层（ODS）数据。应用数据层（ADS）作为产品特有的个性化数据一般不对外提供数据服务，但是ADS作为被服务方也需要遵守这个约定。</p>
+<h2 id="基本原则"><a href="#基本原则" class="headerlink" title="基本原则"></a>基本原则</h2><ul>
+<li><h3 id="高内聚低耦合"><a href="#高内聚低耦合" class="headerlink" title="高内聚低耦合"></a>高内聚低耦合</h3><p>主要从数据业务特性和访问特性两个角度来考虑：将业务相近或者相关、粒度相同的数据设计为一个逻辑或者物理模型；将高概率同时访问的数据放在一起，将低概率同时访问的数据分开存储。</p>
+</li>
+<li><h3 id="核心模型与扩展模型分离"><a href="#核心模型与扩展模型分离" class="headerlink" title="核心模型与扩展模型分离"></a>核心模型与扩展模型分离</h3><p>核心模型包括的字段支持常用的核心业务，扩展模型包括的字段支持个性化或少量应用的需要。不能让扩散模型的字段过度入侵核心模型，以免破坏核心模型的架构简洁性和可维护性。</p>
+</li>
+<li><h3 id="公共处理逻辑下沉及单一"><a href="#公共处理逻辑下沉及单一" class="headerlink" title="公共处理逻辑下沉及单一"></a>公共处理逻辑下沉及单一</h3><p>越是底层公用数据的逻辑处理越应该在数据调度依赖的底层进行封装与实现，不要让公用的逻辑处理暴露给应用层实现，不要让公共逻辑多处同时存在。</p>
+</li>
+<li><h3 id="成本与性能平衡"><a href="#成本与性能平衡" class="headerlink" title="成本与性能平衡"></a>成本与性能平衡</h3><p>适当的数据冗余可换取查询和刷新性能，不易过度冗余与数据复制。</p>
+</li>
+<li><h3 id="数据可回滚"><a href="#数据可回滚" class="headerlink" title="数据可回滚"></a>数据可回滚</h3><p>处理逻辑不变，在不同时间多次运行数据结果确定不变。</p>
+</li>
+<li><h3 id="一致性"><a href="#一致性" class="headerlink" title="一致性"></a>一致性</h3><p>具有相同含义的字段在不同表中的命名必须相同，必须使用规范定义中的名称。</p>
+</li>
+<li><h3 id="命名清晰、可理解"><a href="#命名清晰、可理解" class="headerlink" title="命名清晰、可理解"></a>命名清晰、可理解</h3><p>表名需清晰、一致，表名需易于使用者理解应用。</p>
+</li>
+</ul>
 
     </div>
 
@@ -282,7 +312,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/JVM/" rel="tag"># JVM</a>
+              <a href="/tags/%E7%BB%B4%E5%BA%A6%E5%BB%BA%E6%A8%A1/" rel="tag"># 维度建模</a>
           </div>
 
         
@@ -291,12 +321,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2022/09/25/%E9%98%BF%E9%87%8C%E5%B7%B4%E5%B7%B4%E6%95%B0%E6%8D%AE%E5%85%AC%E5%85%B1%E5%B1%82%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88/" rel="prev" title="OneData数据治理方法论-阿里数据公共层设计方案">
-      <i class="fa fa-chevron-left"></i> OneData数据治理方法论-阿里数据公共层设计方案
+    <a href="/2022/09/25/OneData%E6%96%B9%E6%B3%95%E8%AE%BA/" rel="prev" title="OneData数据治理方法论">
+      <i class="fa fa-chevron-left"></i> OneData数据治理方法论
     </a></div>
       <div class="post-nav-item">
-    <a href="/2023/05/15/Kafka%E6%97%A5%E5%BF%97%E6%9F%A5%E6%89%BE%E8%BF%87%E7%A8%8B/" rel="next" title="Kafka日志查找过程">
-      Kafka日志查找过程 <i class="fa fa-chevron-right"></i>
+    <a href="/2022/10/02/JVM%E7%9A%84%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93/" rel="next" title="JVM的知识点总结">
+      JVM的知识点总结 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -356,7 +386,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#JVM%E7%9A%84%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93"><span class="nav-number">1.</span> <span class="nav-text">JVM的知识点总结</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.1.</span> <span class="nav-text">简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8C%BA%E5%9F%9F"><span class="nav-number">1.1.1.</span> <span class="nav-text">JVM运行时区域</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6"><span class="nav-number">1.1.2.</span> <span class="nav-text">垃圾回收</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HotSpot%E7%9A%84%E7%AE%97%E6%B3%95%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="nav-number">1.1.3.</span> <span class="nav-text">HotSpot的算法实现细节</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HotSpot-VM%E5%AF%B9%E8%B1%A1"><span class="nav-number">1.1.4.</span> <span class="nav-text">HotSpot VM对象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B"><span class="nav-number">1.1.5.</span> <span class="nav-text">类加载过程</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%98%BF%E9%87%8C%E6%95%B0%E6%8D%AE%E5%85%AC%E5%85%B1%E5%B1%82%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88"><span class="nav-number">1.</span> <span class="nav-text">阿里数据公共层设计方案</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%90%86%E8%AE%BA"><span class="nav-number">1.1.</span> <span class="nav-text">理论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E5%B1%82%E6%AC%A1"><span class="nav-number">1.2.</span> <span class="nav-text">模型层次</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E5%8E%9F%E5%88%99"><span class="nav-number">1.3.</span> <span class="nav-text">基本原则</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E5%86%85%E8%81%9A%E4%BD%8E%E8%80%A6%E5%90%88"><span class="nav-number">1.3.1.</span> <span class="nav-text">高内聚低耦合</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9E%8B%E4%B8%8E%E6%89%A9%E5%B1%95%E6%A8%A1%E5%9E%8B%E5%88%86%E7%A6%BB"><span class="nav-number">1.3.2.</span> <span class="nav-text">核心模型与扩展模型分离</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%AC%E5%85%B1%E5%A4%84%E7%90%86%E9%80%BB%E8%BE%91%E4%B8%8B%E6%B2%89%E5%8F%8A%E5%8D%95%E4%B8%80"><span class="nav-number">1.3.3.</span> <span class="nav-text">公共处理逻辑下沉及单一</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%90%E6%9C%AC%E4%B8%8E%E6%80%A7%E8%83%BD%E5%B9%B3%E8%A1%A1"><span class="nav-number">1.3.4.</span> <span class="nav-text">成本与性能平衡</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%8F%AF%E5%9B%9E%E6%BB%9A"><span class="nav-number">1.3.5.</span> <span class="nav-text">数据可回滚</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7"><span class="nav-number">1.3.6.</span> <span class="nav-text">一致性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E5%90%8D%E6%B8%85%E6%99%B0%E3%80%81%E5%8F%AF%E7%90%86%E8%A7%A3"><span class="nav-number">1.3.7.</span> <span class="nav-text">命名清晰、可理解</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
