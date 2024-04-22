@@ -20,21 +20,21 @@
     var CONFIG = {"hostname":"www.wfanming.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":10,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="阿里数据公共层设计方案理论​		阿里数据公共层设计理念遵循维度建模思想。数据模型的维度设计主要以维度建模理论为基础，基于维度数据模型总线架构，构建一致性的维度和事实。 模型层次​		阿里的数据模型三层架构：操作数据层（ODS）、公共维度模型层（CDM）、应用数据层（ADS）。 其中公共维度模型层包括明细数据层（DWD）和汇总数据层（DWS）。模型层次关系如下：  操作数据层（ODS）：保存系统内的">
+  <meta name="description" content="阿里数据公共层设计方案理论​		阿里数据公共层设计理念遵循维度建模思想。数据模型的维度设计主要以维度建模理论为基础，基于维度数据模型总线架构，构建一致性的维度和事实。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="OneData数据治理方法论-阿里数据公共层设计方案">
 <meta property="og:url" content="https://www.wfanming.top/2022/09/25/%E9%98%BF%E9%87%8C%E5%B7%B4%E5%B7%B4%E6%95%B0%E6%8D%AE%E5%85%AC%E5%85%B1%E5%B1%82%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88/index.html">
 <meta property="og:site_name" content="Duncan&#39;s Blog">
-<meta property="og:description" content="阿里数据公共层设计方案理论​		阿里数据公共层设计理念遵循维度建模思想。数据模型的维度设计主要以维度建模理论为基础，基于维度数据模型总线架构，构建一致性的维度和事实。 模型层次​		阿里的数据模型三层架构：操作数据层（ODS）、公共维度模型层（CDM）、应用数据层（ADS）。 其中公共维度模型层包括明细数据层（DWD）和汇总数据层（DWS）。模型层次关系如下：  操作数据层（ODS）：保存系统内的">
+<meta property="og:description" content="阿里数据公共层设计方案理论​		阿里数据公共层设计理念遵循维度建模思想。数据模型的维度设计主要以维度建模理论为基础，基于维度数据模型总线架构，构建一致性的维度和事实。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="f:\study\blog\source\images\%E9%98%BF%E9%87%8C%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B%E5%B1%82%E6%AC%A1%E5%85%B3%E7%B3%BB%E5%9B%BE.png">
-<meta property="og:image" content="f:\study\blog\source\images\%E9%98%BF%E9%87%8C%E6%A8%A1%E5%9E%8B%E6%9E%B6%E6%9E%84%E5%9B%BE.png">
+<meta property="og:image" content="https://www.wfanming.top/images/%E9%98%BF%E9%87%8C%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B%E5%B1%82%E6%AC%A1%E5%85%B3%E7%B3%BB%E5%9B%BE.png">
+<meta property="og:image" content="https://www.wfanming.top/images/%E9%98%BF%E9%87%8C%E6%A8%A1%E5%9E%8B%E6%9E%B6%E6%9E%84%E5%9B%BE.png">
 <meta property="article:published_time" content="2022-09-25T07:12:19.000Z">
-<meta property="article:modified_time" content="2024-04-21T09:28:58.708Z">
+<meta property="article:modified_time" content="2024-04-22T02:32:01.515Z">
 <meta property="article:author" content="Wang Fanming">
 <meta property="article:tag" content="维度建模">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="f:\study\blog\source\images\%E9%98%BF%E9%87%8C%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B%E5%B1%82%E6%AC%A1%E5%85%B3%E7%B3%BB%E5%9B%BE.png">
+<meta name="twitter:image" content="https://www.wfanming.top/images/%E9%98%BF%E9%87%8C%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B%E5%B1%82%E6%AC%A1%E5%85%B3%E7%B3%BB%E5%9B%BE.png">
 
 <link rel="canonical" href="https://www.wfanming.top/2022/09/25/%E9%98%BF%E9%87%8C%E5%B7%B4%E5%B7%B4%E6%95%B0%E6%8D%AE%E5%85%AC%E5%85%B1%E5%B1%82%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88/">
 
@@ -225,7 +225,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-04-21 17:28:58" itemprop="dateModified" datetime="2024-04-21T17:28:58+08:00">2024-04-21</time>
+                <time title="修改时间：2024-04-22 10:32:01" itemprop="dateModified" datetime="2024-04-22T10:32:01+08:00">2024-04-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -263,9 +263,11 @@
 
       
         <h1 id="阿里数据公共层设计方案"><a href="#阿里数据公共层设计方案" class="headerlink" title="阿里数据公共层设计方案"></a>阿里数据公共层设计方案</h1><h2 id="理论"><a href="#理论" class="headerlink" title="理论"></a>理论</h2><p>​		阿里数据公共层设计理念遵循维度建模思想。数据模型的维度设计主要以维度建模理论为基础，基于维度数据模型总线架构，构建一致性的维度和事实。</p>
+<span id="more"></span>
+
 <h2 id="模型层次"><a href="#模型层次" class="headerlink" title="模型层次"></a>模型层次</h2><p>​		阿里的数据模型三层架构：操作数据层（ODS）、公共维度模型层（CDM）、应用数据层（ADS）。</p>
 <p>其中公共维度模型层包括明细数据层（DWD）和汇总数据层（DWS）。模型层次关系如下：</p>
-<p><img src="F:\study\blog\source\images\阿里数据模型层次关系图.png" alt="模型层次"></p>
+<p><img src="/images/%E9%98%BF%E9%87%8C%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B%E5%B1%82%E6%AC%A1%E5%85%B3%E7%B3%BB%E5%9B%BE.png" alt="模型层次"></p>
 <p><strong>操作数据层（ODS）</strong>：保存系统内的原始数据。</p>
 <ul>
 <li>同步：结构化数据增量或者全量同步到MaxCompute.</li>
@@ -285,7 +287,7 @@
 <li>基于应用的数据组装：大宽表集市、横表转纵表、趋势指标串。</li>
 </ul>
 <p>阿里模型架构图</p>
-<p><img src="F:\study\blog\source\images\阿里模型架构图.png" alt="阿里模型架构图"></p>
+<p><img src="/images/%E9%98%BF%E9%87%8C%E6%A8%A1%E5%9E%8B%E6%9E%B6%E6%9E%84%E5%9B%BE.png" alt="阿里模型架构图"></p>
 <p>​		数据调用服务优先使用公共维度模型层（CDM）数据，当公共层没有数据时，需评估是否需要创建公共层数据，当不需要公用的公共层时，才可以直接使用操作数据层（ODS）数据。应用数据层（ADS）作为产品特有的个性化数据一般不对外提供数据服务，但是ADS作为被服务方也需要遵守这个约定。</p>
 <h2 id="基本原则"><a href="#基本原则" class="headerlink" title="基本原则"></a>基本原则</h2><ul>
 <li><h3 id="高内聚低耦合"><a href="#高内聚低耦合" class="headerlink" title="高内聚低耦合"></a>高内聚低耦合</h3><p>主要从数据业务特性和访问特性两个角度来考虑：将业务相近或者相关、粒度相同的数据设计为一个逻辑或者物理模型；将高概率同时访问的数据放在一起，将低概率同时访问的数据分开存储。</p>
