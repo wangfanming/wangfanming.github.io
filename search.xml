@@ -1642,4 +1642,79 @@ A -&gt; D -&gt; X(2.0)
         <tag>维度建模</tag>
       </tags>
   </entry>
+  <entry>
+    <title>OneData数据治理方法论-阿里OneData实施方案</title>
+    <url>/2022/09/26/%E9%98%BF%E9%87%8C%E6%95%B0%E6%8D%AEOneData%E5%AE%9E%E6%96%BD%E6%96%B9%E6%A1%88/</url>
+    <content><![CDATA[<h1 id="阿里OneData实施方案"><a href="#阿里OneData实施方案" class="headerlink" title="阿里OneData实施方案"></a>阿里OneData实施方案</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>​		文章重点讲解了怎么使用OneData体系及与之相配套的工具在阿里的具体业务中实施落地。</p>
+<span id="more"></span>
+
+<h2 id="指导方针"><a href="#指导方针" class="headerlink" title="指导方针"></a>指导方针</h2><ul>
+<li><h3 id="数仓建设的基石"><a href="#数仓建设的基石" class="headerlink" title="数仓建设的基石"></a>数仓建设的基石</h3><ul>
+<li>充分的业务调研</li>
+<li>需求分析</li>
+</ul>
+</li>
+<li><h3 id="数据总体架构设计"><a href="#数据总体架构设计" class="headerlink" title="数据总体架构设计"></a>数据总体架构设计</h3><ul>
+<li>数据域的划分</li>
+<li>按照维度建模理论，构建总线矩阵、抽象出业务过程和维度。</li>
+<li>对报表需求进行抽象整理，梳理出相关指标体系。</li>
+</ul>
+</li>
+<li><h3 id="使用OneData工具完成指标规范定义和模型设计"><a href="#使用OneData工具完成指标规范定义和模型设计" class="headerlink" title="使用OneData工具完成指标规范定义和模型设计"></a>使用OneData工具完成指标规范定义和模型设计</h3></li>
+</ul>
+<h2 id="实施工作流"><a href="#实施工作流" class="headerlink" title="实施工作流"></a>实施工作流</h2><ol>
+<li><p>数据调研</p>
+<ul>
+<li><p>业务调研：阿里集团业务面比较广，涉及电商、数字娱乐、导航、移动互联网服务等领域。各个领域又涵盖多条业务线，如电商领域涵盖toC和toB的业务。数据仓库是要涵盖所有领域，还是各个领域自建？在各个领域内的不同业务线也存在这种问题。因此要构建大数据仓库，就需要了解各个业务领域、业务线的业务有什么异同点，业务线的模块划分、业务流程。业务调研是否充分，直接决定了数据仓库建设是否会成功。</p>
+<p><img src="/images/%E5%AE%9E%E6%96%BD%E5%B7%A5%E4%BD%9C%E6%B5%81.png" alt="实施工作流"></p>
+<p>阿里由于各业务领域内业务比较相似、关联性大，因此在各业务领域内独自建设数据仓库，进行统一集中建设。</p>
+<p><img src="/images/C%E7%B1%BB%E7%94%B5%E5%95%86%E4%B8%9A%E5%8A%A1%E8%B0%83%E7%A0%94.png" alt="阿里C类电商业务调研"></p>
+</li>
+<li><p>需求调研：</p>
+<ul>
+<li>目标：数据分析师、业务运营人员</li>
+<li>途径：<ol>
+<li>与数据分析师、业务运营人员的沟通。</li>
+<li>对现有报表系统的报表进行研究分析。</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>架构设计</p>
+<ul>
+<li><p>数据域划分</p>
+<p>数据域是面向业务分析时，对业务或维度进行抽象的集合。业务则是由一个个不可拆分的业务动作构成。</p>
+<p><img src="/images/%E4%B8%9A%E5%8A%A1%E4%B8%8E%E4%B8%9A%E5%8A%A1%E5%8A%A8%E4%BD%9C%E6%9E%84%E6%88%90.png" alt="业务与业务动作构成"></p>
+<p>从上图即可看出业务与业务动作之间的关系。在此基础上，对业务过程进行归纳，可抽象出数据域。</p>
+<p><img src="/images/%E6%95%B0%E6%8D%AE%E5%9F%9F.png" alt="数据域"></p>
+</li>
+<li><p>构建总线矩阵</p>
+<ul>
+<li>明确每个数据域下有哪些业务过程。</li>
+<li>业务过程与哪些维度相关。</li>
+</ul>
+<p>分析清楚上述信息后，就可以构建总线矩阵了。</p>
+<p><img src="/images/%E4%BE%9B%E5%BA%94%E9%93%BE%E7%AE%A1%E7%90%86%E4%B8%9A%E5%8A%A1%E8%BF%87%E7%A8%8B%E7%A4%BA%E4%BE%8B.png" alt="供应链管理业务过程示例"></p>
+</li>
+</ul>
+</li>
+<li><p>规范定义</p>
+<p>主要定义指标体系，包括原子指标、修饰词、时间周期、派生指标。</p>
+</li>
+<li><p>模型设计</p>
+<p>主要包括维度及维度属性的规范定义、维表、明细事实表和汇总事实表的模型设计。</p>
+</li>
+</ol>
+<p><strong>OneData体系的实施过程是一个高度迭代和动态的过程，一般采用螺旋式实施方法。在总体架构设计完成后，开始根据数据域进行迭代模型设计和评审。在各个实施过程中，都需要引入评审机制，以确保实施过程的正确性。</strong></p>
+]]></content>
+      <categories>
+        <category>数据仓库</category>
+      </categories>
+      <tags>
+        <tag>OneData</tag>
+        <tag>维度建模</tag>
+      </tags>
+  </entry>
 </search>
