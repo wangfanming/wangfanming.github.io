@@ -126,7 +126,6 @@
 </ol>
 <p><strong>总结</strong></p>
 <p>​	通过以上对数据倾斜场景的分析，不难看出，shuffle阶段最易发生数据倾斜，而且shuffle的过程也会产生大量的磁盘I&#x2F;O、网络I&#x2F;O以及压缩&#x2F;解压缩、序列化&#x2F;反序列化等。</p>
-<p>[]: <a href="https://mp.weixin.qq.com/s?__biz=MzI0NjU2NDkzMQ==&amp;amp;mid=2247494450&amp;amp;idx=1&amp;amp;sn=389e3f6bbd89221bd46643ca6279d117&amp;amp;chksm=e9bffa1edec873080f725a6828fabfb02fa95850f61bdbf3310e55d6adee641451bfc753da1e&amp;amp;scene=21#wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzI0NjU2NDkzMQ==&amp;amp;mid=2247494450&amp;amp;idx=1&amp;amp;sn=389e3f6bbd89221bd46643ca6279d117&amp;amp;chksm=e9bffa1edec873080f725a6828fabfb02fa95850f61bdbf3310e55d6adee641451bfc753da1e&amp;amp;scene=21#wechat_redirect</a></p>
 ]]></content>
       <categories>
         <category>数据治理</category>
@@ -322,7 +321,7 @@
 <p>Parquet是一种列式数据存储格式，可以兼容多种计算引擎，如MapRedcue和Spark等，对多层嵌套的数据结构提供了良好的性能支持，是目前Hive生产环境中数据存储的主流选择之一。</p>
 <p>ORC优化是对RCFile的一种优化，它提供了一种高效的方式来存储Hive数据，同时也能够提高Hive的读取、写入和处理数据的性能，能够兼容多种计算引擎。事实上，在实际的生产环境中，ORC已经成为了Hive在数据存储上的主流选择之一。</p>
 <p>我们使用同样数据及SQL语句，只是数据存储格式不同，得到如下执行时长：</p>
-<p><img src="F:\study\blog\source\images\数据存储格式对比.png" alt="数据存储格式对比"></p>
+<p><img src="/images/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8%E6%A0%BC%E5%BC%8F%E5%AF%B9%E6%AF%94.png" alt="数据存储格式对比"></p>
 <blockquote>
 <p>注：CPU时间：表示运行程序所占用服务器CPU资源的时间。用户等待耗时：记录的是用户从提交作业到返回结果期间用户等待的所有时间。</p>
 </blockquote>
@@ -366,7 +365,6 @@
 <li>坚持代码的简洁原则，这让优化更加简单；</li>
 <li>没有瓶颈时谈论优化，这是自寻烦恼。</li>
 </ul>
-<p>[]: <a href="https://cloud.tencent.com/developer/article/1893127">https://cloud.tencent.com/developer/article/1893127</a></p>
 ]]></content>
       <categories>
         <category>数据治理</category>
