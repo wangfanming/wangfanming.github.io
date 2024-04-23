@@ -686,6 +686,40 @@ A -&gt; D -&gt; X(2.0)
       </tags>
   </entry>
   <entry>
+    <title></title>
+    <url>/2024/04/23/PVE%E4%B8%8BLCX%E8%BF%90%E8%A1%8Ccopilot-gpt4-service/</url>
+    <content><![CDATA[<h1 id="LCX中运行copilot-service"><a href="#LCX中运行copilot-service" class="headerlink" title="LCX中运行copilot-service"></a>LCX中运行copilot-service</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>​		LXC 是一个知名的 <strong>Linux 容器运行时</strong>，包括各类工具、模板、库以及语言绑定。 它非常底层，相当灵活，并覆盖了上游内核支持的几乎所有与容器相关的功能。copilot-gpt4-service用来帮助我们转发对ChatGPT4的请求。本文记录里怎么在PVE下的LCX中运行copilot-service。</p>
+<span id="more"></span>
+
+<h2 id="步骤"><a href="#步骤" class="headerlink" title="步骤"></a>步骤</h2><ol>
+<li><p>选择一个linux系统CT作为基础环境，如ubuntu</p>
+</li>
+<li><p>下载copilot-gpt4-service源码</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">git clone https://gitee.com/big-datasource/copilot-gpt4-service.git</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装golang，并配置环境变量。</p>
+</li>
+<li><p>配置golang的国内代理：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">go env -w GO111MODULE=on</span><br><span class="line">go env -w GOPROXY=https://goproxy.cn,direct</span><br></pre></td></tr></table></figure>
+
+<p>经测试，启动这个服务，必须使用七牛云的代理，阿里云不行。</p>
+</li>
+<li><p>为copilot-gpt4-service配置开机启动项</p>
+<ol>
+<li><p>在&#x2F;etc&#x2F;systemd&#x2F;system目录下新建copilot.service，内容如下：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">[Unit]</span><br><span class="line">Description=copilot-gpt4-service</span><br><span class="line">After=network.target</span><br><span class="line"> </span><br><span class="line">[Service]</span><br><span class="line">Type=simple</span><br><span class="line">ExecStart=/opt/go/bin/go run /root/copilot-gpt4-service</span><br><span class="line">WorkingDirectory=/root/copilot-gpt4-service</span><br><span class="line">User=root</span><br><span class="line">Group=root</span><br><span class="line">Restart=always</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>配置开机启动项</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">sudo systemctl daemon-reload</span><br><span class="line">sudo systemctl enable copilot.service</span><br><span class="line">sudo systemctl start copilot.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用<code>journalctl -u copilot.service</code>命令 即可查看服务的运行日志</p>
+</li>
+</ol>
+</li>
+</ol>
+]]></content>
+  </entry>
+  <entry>
     <title>Spark collect方法分析-Driver端</title>
     <url>/2023/12/12/Spark%20collect%E6%96%B9%E6%B3%95%E5%88%86%E6%9E%90-Driver%E7%AB%AF/</url>
     <content><![CDATA[<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>​	在Spark框架中，理解用户代码是怎么被框架执行的，有助于我们写出高效高质量的代码，也有利于我们在问题分析时可以快速准确的定位问题。</p>
