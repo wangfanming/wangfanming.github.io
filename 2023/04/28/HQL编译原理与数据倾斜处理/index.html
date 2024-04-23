@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.wfanming.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":10,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Hive SQL编译原理与数据倾斜处理HiveSQL编译成MapReduce的过程  词法、语法解析: Antlr 定义 SQL 的语法规则，完成 SQL 词法，语法解析，将 SQL 转化为抽象语法树 AST Tree； 语义解析: 遍历 AST Tree，抽象出查询的基本组成单元 QueryBlock； 生成逻辑执行计划: 遍历 QueryBlock，翻译为执行操作树 OperatorTree；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hive SQL编译原理与数据倾斜处理">
+<meta property="og:url" content="https://www.wfanming.top/2023/04/28/HQL%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C%E5%A4%84%E7%90%86/index.html">
+<meta property="og:site_name" content="Duncan&#39;s Blog">
+<meta property="og:description" content="Hive SQL编译原理与数据倾斜处理HiveSQL编译成MapReduce的过程  词法、语法解析: Antlr 定义 SQL 的语法规则，完成 SQL 词法，语法解析，将 SQL 转化为抽象语法树 AST Tree； 语义解析: 遍历 AST Tree，抽象出查询的基本组成单元 QueryBlock； 生成逻辑执行计划: 遍历 QueryBlock，翻译为执行操作树 OperatorTree；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.wfanming.top/images/hivesql%E7%BC%96%E8%AF%91%E8%BF%87%E7%A8%8B.png">
+<meta property="og:image" content="https://www.wfanming.top/images/join%E8%BF%87%E7%A8%8B.png">
+<meta property="og:image" content="https://www.wfanming.top/images/groupby%E8%BF%87%E7%A8%8B.png">
+<meta property="og:image" content="https://www.wfanming.top/images/Distinct%E8%BF%87%E7%A8%8B.png">
+<meta property="article:published_time" content="2023-04-28T02:46:32.000Z">
+<meta property="article:modified_time" content="2024-04-23T16:02:18.839Z">
+<meta property="article:author" content="Wang Fanming">
+<meta property="article:tag" content="Hive">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.wfanming.top/images/hivesql%E7%BC%96%E8%AF%91%E8%BF%87%E7%A8%8B.png">
+
+<link rel="canonical" href="https://www.wfanming.top/2023/04/28/HQL%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C%E5%A4%84%E7%90%86/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Hive SQL编译原理与数据倾斜处理 | Duncan's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Duncan's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">何以解忧，唯有学习</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/wangfanming" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2023/04/28/HQL%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C%E5%A4%84%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Wang Fanming">
+      <meta itemprop="description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Duncan's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Hive SQL编译原理与数据倾斜处理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-28 10:46:32" itemprop="dateCreated datePublished" datetime="2023-04-28T10:46:32+08:00">2023-04-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-04-24 00:02:18" itemprop="dateModified" datetime="2024-04-24T00:02:18+08:00">2024-04-24</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E6%B2%BB%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">数据治理</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E6%B2%BB%E7%90%86/%E6%95%B0%E6%8D%AE%E4%BB%93%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据仓库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Hive-SQL编译原理与数据倾斜处理"><a href="#Hive-SQL编译原理与数据倾斜处理" class="headerlink" title="Hive SQL编译原理与数据倾斜处理"></a>Hive SQL编译原理与数据倾斜处理</h1><h2 id="HiveSQL编译成MapReduce的过程"><a href="#HiveSQL编译成MapReduce的过程" class="headerlink" title="HiveSQL编译成MapReduce的过程"></a>HiveSQL编译成MapReduce的过程</h2><p><img src="/images/hivesql%E7%BC%96%E8%AF%91%E8%BF%87%E7%A8%8B.png" alt="hivesql编译过程"></p>
+<ol>
+<li>词法、语法解析: Antlr 定义 SQL 的语法规则，完成 SQL 词法，语法解析，将 SQL 转化为抽象语法树 AST Tree；</li>
+<li>语义解析: 遍历 AST Tree，抽象出查询的基本组成单元 QueryBlock；</li>
+<li>生成逻辑执行计划: 遍历 QueryBlock，翻译为执行操作树 OperatorTree；</li>
+<li>优化逻辑执行计划: 逻辑层优化器进行 OperatorTree 变换，合并 Operator，达到减少 MapReduce Job，减少数据传输及 shuffle 数据量；</li>
+<li>生成物理执行计划: 遍历 OperatorTree，翻译为 MapReduce 任务；</li>
+<li>优化物理执行计划: 物理层优化器进行 MapReduce 任务的变换，生成最终的执行计划。</li>
+</ol>
+<span id="more"></span>
+
+<p><strong>Join的实现原理</strong></p>
+<p>以下面这个SQL为例，讲解 join 的实现：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select u.name, o.orderid from order o join user u on o.uid = u.uid;</span><br></pre></td></tr></table></figure>
+
+<p>在map的输出value中为不同表的数据打上tag标记，在reduce阶段根据tag判断数据来源。MapReduce的过程如下：</p>
+<p><img src="/images/join%E8%BF%87%E7%A8%8B.png" alt="join过程"></p>
+<p><strong>Group By的实现原理</strong></p>
+<p>以下面这个SQL为例，讲解 group by 的实现：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select rank, isonline, count(*) from city group by rank, isonline;</span><br></pre></td></tr></table></figure>
+
+<p>将GroupBy的字段组合为map的输出key值，利用MapReduce的排序，在reduce阶段保存LastKey区分不同的key。MapReduce的过程如下:</p>
+<p><img src="/images/groupby%E8%BF%87%E7%A8%8B.png" alt="Image"></p>
+<p><strong>Distinct的实现原理</strong></p>
+<p>以下面这个SQL为例，讲解 distinct 的实现：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select dealid, count(distinct uid) num from order group by dealid;</span><br></pre></td></tr></table></figure>
+
+<p>当只有一个distinct字段时，如果不考虑Map阶段的Hash GroupBy，只需要将GroupBy字段和Distinct字段组合为map输出key，利用mapreduce的排序，同时将GroupBy字段作为reduce的key，在reduce阶段保存LastKey即可完成去重:</p>
+<p><img src="/images/Distinct%E8%BF%87%E7%A8%8B.png"></p>
+<h2 id="数据倾斜问题剖析"><a href="#数据倾斜问题剖析" class="headerlink" title="数据倾斜问题剖析"></a>数据倾斜问题剖析</h2><p>原则：没有瓶颈谈优化，毫无意义。</p>
+<p>在分布式系统中，数据倾斜现象时不可避免的。但是发生了数据倾斜要不要处理，要怎么处理，这是个问题。单机资源足够大，数据量不大，发生了倾斜我们也难以感知。只有当数据量超出了某单机的处理能力时，才会影响我们的业务。此时，就需要我们对数据倾斜进行分析处理。</p>
+<p>从本质上讲，发生数据倾斜的情况有两种：</p>
+<ol>
+<li>map段读取到了不可分割的大文件，某个文件太大，超出了task的处理能力</li>
+<li>shuffle阶段由于数据分布不均匀，导致reduce接收到的数据出现倾斜。</li>
+</ol>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ol>
+<li><p><strong>空值引发的数据倾斜</strong></p>
+<p>​	实际业务中有些大量的null值或者一些无意义的数据参与到计算作业中，表中有大量的null值，如果表之间进行join操作，就会有shuffle产生，这样所有的null值都会被分配到一个reduce中，必然产生数据倾斜。</p>
+<p>​	如果A、B两表join操作，假如A表中需要join的字段为null，但是B表中需要join的字段不为null，这两个字段根本就join不上，为什么还会放到一个reduce中呢？</p>
+<p>​	这是因为这个倾斜发生的根本原因在于shuffle动作，只要key的hash结果是一样的，它们在进行shuffle后就会被拉到同一个reduce中。</p>
+<p>解决办法两种：</p>
+<ol>
+<li><p>可以直接不让null值参与join操作，即不让null值有shuffle阶段</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> log a</span><br><span class="line"> <span class="keyword">JOIN</span> users b</span><br><span class="line"> <span class="keyword">ON</span> a.user_id <span class="keyword">IS</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span></span><br><span class="line">  <span class="keyword">AND</span> a.user_id <span class="operator">=</span> b.user_id</span><br><span class="line"><span class="keyword">UNION</span> <span class="keyword">ALL</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> log a</span><br><span class="line"><span class="keyword">WHERE</span> a.user_id <span class="keyword">IS</span> <span class="keyword">NULL</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>因为null值参与shuffle时的hash结果是一样的，那么我们可以给null值随机赋值，这样它们的hash结果就不一样，就会进到不同的reduce中</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> log a</span><br><span class="line"> <span class="keyword">LEFT</span> <span class="keyword">JOIN</span> users b <span class="keyword">ON</span> <span class="keyword">CASE</span> </span><br><span class="line">   <span class="keyword">WHEN</span> a.user_id <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">THEN</span> concat(<span class="string">&#x27;hive_&#x27;</span>, rand())</span><br><span class="line">   <span class="keyword">ELSE</span> a.user_id</span><br><span class="line">  <span class="keyword">END</span> <span class="operator">=</span> b.user_id;</span><br></pre></td></tr></table></figure></li>
+</ol>
+</li>
+<li><p><strong>不同数据类型引发的数据倾斜</strong></p>
+<p>​	对于两个表join，表a中需要join的字段key为int，表b中key字段既有string类型也有int类型。当按照key进行两个表的join操作时，默认的Hash操作会按int型的id来进行分配，这样所有的string类型都被分配成同一个id，结果就是所有的string类型的字段进入到一个reduce中，引发数据倾斜。</p>
+<p>解决办法：</p>
+<p>​	如果key字段既有string类型也有int类型，默认的hash就都会按int类型来分配，那我们直接把int类型都转为string就好了，这样key字段都为string，hash时就按照string类型分配了：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> users a</span><br><span class="line"> <span class="keyword">LEFT</span> <span class="keyword">JOIN</span> logs b <span class="keyword">ON</span> a.usr_id <span class="operator">=</span> <span class="built_in">CAST</span>(b.user_id <span class="keyword">AS</span> string);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>不可拆分大文件引发的数据倾斜</strong></p>
+<p>​	如果文件是因为采用了不支持分割操作的压缩方式，Map任务读取时只能整个读取，不会按照Block划分。如果这个压缩文件很大，则会导致Map端数据倾斜。</p>
+<p>解决办法：</p>
+<p>​	在数据存储时使用bzip和zip等可分割的压缩算法。</p>
+</li>
+<li><p><strong>数据膨胀引发的数据倾斜</strong></p>
+<p>​	在多维聚合计算时，如果进行分组聚合的字段过多，如下：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> a，b，c，count（<span class="number">1</span>）<span class="keyword">from</span> log <span class="keyword">group</span> <span class="keyword">by</span> a，b，c <span class="keyword">with</span> <span class="keyword">rollup</span>;	</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注：with rollup是用来在分组统计数据的基础上再进行统计汇总，即用来得到group by的汇总信息。</p>
+</blockquote>
+<p>​	如果上面的log表的数据量很大，并且Map端的聚合不能很好地起到数据压缩的情况下，会导致Map端产出的数据急速膨胀，这种情况容易导致作业内存溢出的异常。如果log表含有数据倾斜key，会加剧Shuffle过程的数据倾斜。</p>
+<p>解决方案：</p>
+<p>可以拆分上面的sql，将with rollup拆分成如下几个sql：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> a, b, c, <span class="built_in">COUNT</span>(<span class="number">1</span>)</span><br><span class="line"><span class="keyword">FROM</span> log</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> a, b, c;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> a, b, <span class="keyword">NULL</span>, <span class="built_in">COUNT</span>(<span class="number">1</span>)</span><br><span class="line"><span class="keyword">FROM</span> log</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> a, b;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> a, <span class="keyword">NULL</span>, <span class="keyword">NULL</span>, <span class="built_in">COUNT</span>(<span class="number">1</span>)</span><br><span class="line"><span class="keyword">FROM</span> log</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> a;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> <span class="keyword">NULL</span>, <span class="keyword">NULL</span>, <span class="keyword">NULL</span>, <span class="built_in">COUNT</span>(<span class="number">1</span>)</span><br><span class="line"><span class="keyword">FROM</span> log;</span><br></pre></td></tr></table></figure>
+
+<p>​	但是，上面这种方式不太好，因为现在是对3个字段进行分组聚合，那如果是5个或者10个字段呢，那么需要拆解的SQL语句会更多。</p>
+<p>​	在Hive中可以通过参数 hive.new.job.grouping.set.cardinality 配置的方式自动控制作业的拆解，该参数默认值是30。表示针对grouping sets&#x2F;rollups&#x2F;cubes这类多维聚合的操作，如果最后拆解的键组合大于该值，会启用新的任务去处理大于该值之外的组合。如果在处理数据时，某个分组聚合的列有较大的倾斜，可以适当调小该值。</p>
+</li>
+<li><p><strong>表连接时引发的数据倾斜</strong></p>
+<p>​	两表进行普通的repartition join时，如果表连接的键存在倾斜，那么在 Shuffle 阶段必然会引起数据倾斜。</p>
+<p>解决方案：</p>
+<p>​	通常做法是将倾斜的数据存到分布式缓存中，分发到各个 Map任务所在节点。在Map阶段完成join操作，即MapJoin，这避免了 Shuffle，从而避免了数据倾斜。</p>
+<blockquote>
+<p>MapJoin是Hive的一种优化操作，其适用于小表JOIN大表的场景，由于表的JOIN操作是在Map端且在内存进行的，所以其并不需要启动Reduce任务也就不需要经过shuffle阶段，从而能在一定程度上节省资源提高JOIN效率。</p>
+</blockquote>
+<p>​	在Hive 0.11版本之前，如果想在Map阶段完成join操作，必须使用MAPJOIN来标记显示地启动该优化操作，由于其需要将小表加载进内存所以要注意小表的大小。</p>
+<p>如将a表放到Map端内存中执行，在Hive 0.11版本之前需要这样写：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="comment">/* +mapjoin(a) */</span> a.id , a.name, b.age </span><br><span class="line"><span class="keyword">from</span> a <span class="keyword">join</span> b </span><br><span class="line"><span class="keyword">on</span> a.id <span class="operator">=</span> b.id;</span><br></pre></td></tr></table></figure>
+
+<p>​	如果想将多个表放到Map端内存中，只需在mapjoin()中写多个表名称即可，用逗号分隔，如将a表和c表放到Map端内存中，则 &#x2F; <em>+mapjoin(a,c)</em> &#x2F; 。</p>
+<p>在Hive 0.11版本及之后，Hive默认启动该优化，也就是不在需要显示的使用MAPJOIN标记，其会在必要的时候触发该优化操作将普通JOIN转换成MapJoin，可以通过以下两个属性来设置该优化的触发时机：</p>
+<ul>
+<li><p>hive.auto.convert.join&#x3D;true 默认值为true，自动开启MAPJOIN优化。</p>
+</li>
+<li><p>hive.mapjoin.smalltable.filesize&#x3D;2500000 默认值为2500000(25M)，通过配置该属性来确定使用该优化的表的大小，如果表的大小小于此值就会被加载进内存中。</p>
+</li>
+</ul>
+<p>注意：使用默认启动该优化的方式如果出现莫名其妙的BUG(比如MAPJOIN并不起作用)，就将以下两个属性置为fase手动使用MAPJOIN标记来启动该优化:</p>
+<ul>
+<li><p>hive.auto.convert.join&#x3D;false (关闭自动MAPJOIN转换操作)</p>
+</li>
+<li><p>hive.ignore.mapjoin.hint&#x3D;false (不忽略MAPJOIN标记)</p>
+</li>
+</ul>
+<p>再提一句：将表放到Map端内存时，如果节点的内存很大，但还是出现内存溢出的情况，我们可以通过这个参数 mapreduce.map.memory.mb 调节Map端内存的大小。</p>
+</li>
+<li><p>确实无法减少数据量引发的数据倾斜</p>
+<p>​	在一些操作中，如在使用 collect_list 函数时，我们没有办法减少数据量</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> s_age,collect_list(s_score) list_score</span><br><span class="line"><span class="keyword">from</span> student</span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> s_age</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>collect_list：将分组中的某列转为一个数组返回。</p>
+<p>在上述sql中，s_age有数据倾斜，但如果数据量大到一定的数量，会导致处理倾斜的Reduce任务产生内存溢出的异常。</p>
+<p>collect_list输出一个数组，中间结果会放到内存中，所以如果collect_list聚合太多数据，会导致内存溢出。</p>
+</li>
+</ul>
+<p>有小伙伴说这是 group by 分组引起的数据倾斜，可以开启hive.groupby.skewindata参数来优化。我们接下来分析下：</p>
+<p>开启该配置会将作业拆解成两个作业，第一个作业会尽可能将Map的数据平均分配到Reduce阶段，并在这个阶段实现数据的预聚合，以减少第二个作业处理的数据量；第二个作业在第一个作业处理的数据基础上进行结果的聚合。</p>
+<p>hive.groupby.skewindata的核心作用在于生成的第一个作业能够有效减少数量。但是对于collect_list这类要求全量操作所有数据的中间结果的函数来说，明显起不到作用，反而因为引入新的作业增加了磁盘和网络I&#x2F;O的负担，而导致性能变得更为低下。</p>
+<p>解决方案：</p>
+<p>​	这类问题最直接的方式就是调整reduce所执行的内存大小。调整reduce的内存大小使用mapreduce.reduce.memory.mb这个配置。</p>
+</li>
+</ol>
+<p><strong>总结</strong></p>
+<p>​	通过以上对数据倾斜场景的分析，不难看出，shuffle阶段最易发生数据倾斜，而且shuffle的过程也会产生大量的磁盘I&#x2F;O、网络I&#x2F;O以及压缩&#x2F;解压缩、序列化&#x2F;反序列化等。</p>
+<p>[]: <a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzI0NjU2NDkzMQ==&amp;amp;mid=2247494450&amp;amp;idx=1&amp;amp;sn=389e3f6bbd89221bd46643ca6279d117&amp;amp;chksm=e9bffa1edec873080f725a6828fabfb02fa95850f61bdbf3310e55d6adee641451bfc753da1e&amp;amp;scene=21#wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzI0NjU2NDkzMQ==&amp;amp;mid=2247494450&amp;amp;idx=1&amp;amp;sn=389e3f6bbd89221bd46643ca6279d117&amp;amp;chksm=e9bffa1edec873080f725a6828fabfb02fa95850f61bdbf3310e55d6adee641451bfc753da1e&amp;amp;scene=21#wechat_redirect</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Hive/" rel="tag"># Hive</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/10/02/JVM%E7%9A%84%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93/" rel="prev" title="JVM的知识点总结">
+      <i class="fa fa-chevron-left"></i> JVM的知识点总结
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/05/09/Hive%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92%E5%88%86%E6%9E%90/" rel="next" title="Hive执行计划分析">
+      Hive执行计划分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Hive-SQL%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C%E5%A4%84%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">Hive SQL编译原理与数据倾斜处理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#HiveSQL%E7%BC%96%E8%AF%91%E6%88%90MapReduce%E7%9A%84%E8%BF%87%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">HiveSQL编译成MapReduce的过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C%E9%97%AE%E9%A2%98%E5%89%96%E6%9E%90"><span class="nav-number">1.2.</span> <span class="nav-text">数据倾斜问题剖析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.2.1.</span> <span class="nav-text">解决方案</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Wang Fanming</p>
+  <div class="site-description" itemprop="description">吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">22</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wangfanming" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wangfanming" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/wangfanming1204@gmail.com" title="E-Mail → wangfanming1204@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Wang Fanming</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">110k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">1:40</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

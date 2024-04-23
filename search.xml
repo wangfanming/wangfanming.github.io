@@ -1,6 +1,142 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Hive SQL编译原理与数据倾斜处理</title>
+    <url>/2023/04/28/HQL%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C%E5%A4%84%E7%90%86/</url>
+    <content><![CDATA[<h1 id="Hive-SQL编译原理与数据倾斜处理"><a href="#Hive-SQL编译原理与数据倾斜处理" class="headerlink" title="Hive SQL编译原理与数据倾斜处理"></a>Hive SQL编译原理与数据倾斜处理</h1><h2 id="HiveSQL编译成MapReduce的过程"><a href="#HiveSQL编译成MapReduce的过程" class="headerlink" title="HiveSQL编译成MapReduce的过程"></a>HiveSQL编译成MapReduce的过程</h2><p><img src="/images/hivesql%E7%BC%96%E8%AF%91%E8%BF%87%E7%A8%8B.png" alt="hivesql编译过程"></p>
+<ol>
+<li>词法、语法解析: Antlr 定义 SQL 的语法规则，完成 SQL 词法，语法解析，将 SQL 转化为抽象语法树 AST Tree；</li>
+<li>语义解析: 遍历 AST Tree，抽象出查询的基本组成单元 QueryBlock；</li>
+<li>生成逻辑执行计划: 遍历 QueryBlock，翻译为执行操作树 OperatorTree；</li>
+<li>优化逻辑执行计划: 逻辑层优化器进行 OperatorTree 变换，合并 Operator，达到减少 MapReduce Job，减少数据传输及 shuffle 数据量；</li>
+<li>生成物理执行计划: 遍历 OperatorTree，翻译为 MapReduce 任务；</li>
+<li>优化物理执行计划: 物理层优化器进行 MapReduce 任务的变换，生成最终的执行计划。</li>
+</ol>
+<span id="more"></span>
+
+<p><strong>Join的实现原理</strong></p>
+<p>以下面这个SQL为例，讲解 join 的实现：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select u.name, o.orderid from order o join user u on o.uid = u.uid;</span><br></pre></td></tr></table></figure>
+
+<p>在map的输出value中为不同表的数据打上tag标记，在reduce阶段根据tag判断数据来源。MapReduce的过程如下：</p>
+<p><img src="/images/join%E8%BF%87%E7%A8%8B.png" alt="join过程"></p>
+<p><strong>Group By的实现原理</strong></p>
+<p>以下面这个SQL为例，讲解 group by 的实现：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select rank, isonline, count(*) from city group by rank, isonline;</span><br></pre></td></tr></table></figure>
+
+<p>将GroupBy的字段组合为map的输出key值，利用MapReduce的排序，在reduce阶段保存LastKey区分不同的key。MapReduce的过程如下:</p>
+<p><img src="/images/groupby%E8%BF%87%E7%A8%8B.png" alt="Image"></p>
+<p><strong>Distinct的实现原理</strong></p>
+<p>以下面这个SQL为例，讲解 distinct 的实现：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select dealid, count(distinct uid) num from order group by dealid;</span><br></pre></td></tr></table></figure>
+
+<p>当只有一个distinct字段时，如果不考虑Map阶段的Hash GroupBy，只需要将GroupBy字段和Distinct字段组合为map输出key，利用mapreduce的排序，同时将GroupBy字段作为reduce的key，在reduce阶段保存LastKey即可完成去重:</p>
+<p><img src="/images/Distinct%E8%BF%87%E7%A8%8B.png"></p>
+<h2 id="数据倾斜问题剖析"><a href="#数据倾斜问题剖析" class="headerlink" title="数据倾斜问题剖析"></a>数据倾斜问题剖析</h2><p>原则：没有瓶颈谈优化，毫无意义。</p>
+<p>在分布式系统中，数据倾斜现象时不可避免的。但是发生了数据倾斜要不要处理，要怎么处理，这是个问题。单机资源足够大，数据量不大，发生了倾斜我们也难以感知。只有当数据量超出了某单机的处理能力时，才会影响我们的业务。此时，就需要我们对数据倾斜进行分析处理。</p>
+<p>从本质上讲，发生数据倾斜的情况有两种：</p>
+<ol>
+<li>map段读取到了不可分割的大文件，某个文件太大，超出了task的处理能力</li>
+<li>shuffle阶段由于数据分布不均匀，导致reduce接收到的数据出现倾斜。</li>
+</ol>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ol>
+<li><p><strong>空值引发的数据倾斜</strong></p>
+<p>​	实际业务中有些大量的null值或者一些无意义的数据参与到计算作业中，表中有大量的null值，如果表之间进行join操作，就会有shuffle产生，这样所有的null值都会被分配到一个reduce中，必然产生数据倾斜。</p>
+<p>​	如果A、B两表join操作，假如A表中需要join的字段为null，但是B表中需要join的字段不为null，这两个字段根本就join不上，为什么还会放到一个reduce中呢？</p>
+<p>​	这是因为这个倾斜发生的根本原因在于shuffle动作，只要key的hash结果是一样的，它们在进行shuffle后就会被拉到同一个reduce中。</p>
+<p>解决办法两种：</p>
+<ol>
+<li><p>可以直接不让null值参与join操作，即不让null值有shuffle阶段</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> log a</span><br><span class="line"> <span class="keyword">JOIN</span> users b</span><br><span class="line"> <span class="keyword">ON</span> a.user_id <span class="keyword">IS</span> <span class="keyword">NOT</span> <span class="keyword">NULL</span></span><br><span class="line">  <span class="keyword">AND</span> a.user_id <span class="operator">=</span> b.user_id</span><br><span class="line"><span class="keyword">UNION</span> <span class="keyword">ALL</span></span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> log a</span><br><span class="line"><span class="keyword">WHERE</span> a.user_id <span class="keyword">IS</span> <span class="keyword">NULL</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>因为null值参与shuffle时的hash结果是一样的，那么我们可以给null值随机赋值，这样它们的hash结果就不一样，就会进到不同的reduce中</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> log a</span><br><span class="line"> <span class="keyword">LEFT</span> <span class="keyword">JOIN</span> users b <span class="keyword">ON</span> <span class="keyword">CASE</span> </span><br><span class="line">   <span class="keyword">WHEN</span> a.user_id <span class="keyword">IS</span> <span class="keyword">NULL</span> <span class="keyword">THEN</span> concat(<span class="string">&#x27;hive_&#x27;</span>, rand())</span><br><span class="line">   <span class="keyword">ELSE</span> a.user_id</span><br><span class="line">  <span class="keyword">END</span> <span class="operator">=</span> b.user_id;</span><br></pre></td></tr></table></figure></li>
+</ol>
+</li>
+<li><p><strong>不同数据类型引发的数据倾斜</strong></p>
+<p>​	对于两个表join，表a中需要join的字段key为int，表b中key字段既有string类型也有int类型。当按照key进行两个表的join操作时，默认的Hash操作会按int型的id来进行分配，这样所有的string类型都被分配成同一个id，结果就是所有的string类型的字段进入到一个reduce中，引发数据倾斜。</p>
+<p>解决办法：</p>
+<p>​	如果key字段既有string类型也有int类型，默认的hash就都会按int类型来分配，那我们直接把int类型都转为string就好了，这样key字段都为string，hash时就按照string类型分配了：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> users a</span><br><span class="line"> <span class="keyword">LEFT</span> <span class="keyword">JOIN</span> logs b <span class="keyword">ON</span> a.usr_id <span class="operator">=</span> <span class="built_in">CAST</span>(b.user_id <span class="keyword">AS</span> string);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>不可拆分大文件引发的数据倾斜</strong></p>
+<p>​	如果文件是因为采用了不支持分割操作的压缩方式，Map任务读取时只能整个读取，不会按照Block划分。如果这个压缩文件很大，则会导致Map端数据倾斜。</p>
+<p>解决办法：</p>
+<p>​	在数据存储时使用bzip和zip等可分割的压缩算法。</p>
+</li>
+<li><p><strong>数据膨胀引发的数据倾斜</strong></p>
+<p>​	在多维聚合计算时，如果进行分组聚合的字段过多，如下：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> a，b，c，count（<span class="number">1</span>）<span class="keyword">from</span> log <span class="keyword">group</span> <span class="keyword">by</span> a，b，c <span class="keyword">with</span> <span class="keyword">rollup</span>;	</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注：with rollup是用来在分组统计数据的基础上再进行统计汇总，即用来得到group by的汇总信息。</p>
+</blockquote>
+<p>​	如果上面的log表的数据量很大，并且Map端的聚合不能很好地起到数据压缩的情况下，会导致Map端产出的数据急速膨胀，这种情况容易导致作业内存溢出的异常。如果log表含有数据倾斜key，会加剧Shuffle过程的数据倾斜。</p>
+<p>解决方案：</p>
+<p>可以拆分上面的sql，将with rollup拆分成如下几个sql：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> a, b, c, <span class="built_in">COUNT</span>(<span class="number">1</span>)</span><br><span class="line"><span class="keyword">FROM</span> log</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> a, b, c;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> a, b, <span class="keyword">NULL</span>, <span class="built_in">COUNT</span>(<span class="number">1</span>)</span><br><span class="line"><span class="keyword">FROM</span> log</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> a, b;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> a, <span class="keyword">NULL</span>, <span class="keyword">NULL</span>, <span class="built_in">COUNT</span>(<span class="number">1</span>)</span><br><span class="line"><span class="keyword">FROM</span> log</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> a;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> <span class="keyword">NULL</span>, <span class="keyword">NULL</span>, <span class="keyword">NULL</span>, <span class="built_in">COUNT</span>(<span class="number">1</span>)</span><br><span class="line"><span class="keyword">FROM</span> log;</span><br></pre></td></tr></table></figure>
+
+<p>​	但是，上面这种方式不太好，因为现在是对3个字段进行分组聚合，那如果是5个或者10个字段呢，那么需要拆解的SQL语句会更多。</p>
+<p>​	在Hive中可以通过参数 hive.new.job.grouping.set.cardinality 配置的方式自动控制作业的拆解，该参数默认值是30。表示针对grouping sets&#x2F;rollups&#x2F;cubes这类多维聚合的操作，如果最后拆解的键组合大于该值，会启用新的任务去处理大于该值之外的组合。如果在处理数据时，某个分组聚合的列有较大的倾斜，可以适当调小该值。</p>
+</li>
+<li><p><strong>表连接时引发的数据倾斜</strong></p>
+<p>​	两表进行普通的repartition join时，如果表连接的键存在倾斜，那么在 Shuffle 阶段必然会引起数据倾斜。</p>
+<p>解决方案：</p>
+<p>​	通常做法是将倾斜的数据存到分布式缓存中，分发到各个 Map任务所在节点。在Map阶段完成join操作，即MapJoin，这避免了 Shuffle，从而避免了数据倾斜。</p>
+<blockquote>
+<p>MapJoin是Hive的一种优化操作，其适用于小表JOIN大表的场景，由于表的JOIN操作是在Map端且在内存进行的，所以其并不需要启动Reduce任务也就不需要经过shuffle阶段，从而能在一定程度上节省资源提高JOIN效率。</p>
+</blockquote>
+<p>​	在Hive 0.11版本之前，如果想在Map阶段完成join操作，必须使用MAPJOIN来标记显示地启动该优化操作，由于其需要将小表加载进内存所以要注意小表的大小。</p>
+<p>如将a表放到Map端内存中执行，在Hive 0.11版本之前需要这样写：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="comment">/* +mapjoin(a) */</span> a.id , a.name, b.age </span><br><span class="line"><span class="keyword">from</span> a <span class="keyword">join</span> b </span><br><span class="line"><span class="keyword">on</span> a.id <span class="operator">=</span> b.id;</span><br></pre></td></tr></table></figure>
+
+<p>​	如果想将多个表放到Map端内存中，只需在mapjoin()中写多个表名称即可，用逗号分隔，如将a表和c表放到Map端内存中，则 &#x2F; <em>+mapjoin(a,c)</em> &#x2F; 。</p>
+<p>在Hive 0.11版本及之后，Hive默认启动该优化，也就是不在需要显示的使用MAPJOIN标记，其会在必要的时候触发该优化操作将普通JOIN转换成MapJoin，可以通过以下两个属性来设置该优化的触发时机：</p>
+<ul>
+<li><p>hive.auto.convert.join&#x3D;true 默认值为true，自动开启MAPJOIN优化。</p>
+</li>
+<li><p>hive.mapjoin.smalltable.filesize&#x3D;2500000 默认值为2500000(25M)，通过配置该属性来确定使用该优化的表的大小，如果表的大小小于此值就会被加载进内存中。</p>
+</li>
+</ul>
+<p>注意：使用默认启动该优化的方式如果出现莫名其妙的BUG(比如MAPJOIN并不起作用)，就将以下两个属性置为fase手动使用MAPJOIN标记来启动该优化:</p>
+<ul>
+<li><p>hive.auto.convert.join&#x3D;false (关闭自动MAPJOIN转换操作)</p>
+</li>
+<li><p>hive.ignore.mapjoin.hint&#x3D;false (不忽略MAPJOIN标记)</p>
+</li>
+</ul>
+<p>再提一句：将表放到Map端内存时，如果节点的内存很大，但还是出现内存溢出的情况，我们可以通过这个参数 mapreduce.map.memory.mb 调节Map端内存的大小。</p>
+</li>
+<li><p>确实无法减少数据量引发的数据倾斜</p>
+<p>​	在一些操作中，如在使用 collect_list 函数时，我们没有办法减少数据量</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> s_age,collect_list(s_score) list_score</span><br><span class="line"><span class="keyword">from</span> student</span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> s_age</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>collect_list：将分组中的某列转为一个数组返回。</p>
+<p>在上述sql中，s_age有数据倾斜，但如果数据量大到一定的数量，会导致处理倾斜的Reduce任务产生内存溢出的异常。</p>
+<p>collect_list输出一个数组，中间结果会放到内存中，所以如果collect_list聚合太多数据，会导致内存溢出。</p>
+</li>
+</ul>
+<p>有小伙伴说这是 group by 分组引起的数据倾斜，可以开启hive.groupby.skewindata参数来优化。我们接下来分析下：</p>
+<p>开启该配置会将作业拆解成两个作业，第一个作业会尽可能将Map的数据平均分配到Reduce阶段，并在这个阶段实现数据的预聚合，以减少第二个作业处理的数据量；第二个作业在第一个作业处理的数据基础上进行结果的聚合。</p>
+<p>hive.groupby.skewindata的核心作用在于生成的第一个作业能够有效减少数量。但是对于collect_list这类要求全量操作所有数据的中间结果的函数来说，明显起不到作用，反而因为引入新的作业增加了磁盘和网络I&#x2F;O的负担，而导致性能变得更为低下。</p>
+<p>解决方案：</p>
+<p>​	这类问题最直接的方式就是调整reduce所执行的内存大小。调整reduce的内存大小使用mapreduce.reduce.memory.mb这个配置。</p>
+</li>
+</ol>
+<p><strong>总结</strong></p>
+<p>​	通过以上对数据倾斜场景的分析，不难看出，shuffle阶段最易发生数据倾斜，而且shuffle的过程也会产生大量的磁盘I&#x2F;O、网络I&#x2F;O以及压缩&#x2F;解压缩、序列化&#x2F;反序列化等。</p>
+<p>[]: <a href="https://mp.weixin.qq.com/s?__biz=MzI0NjU2NDkzMQ==&amp;amp;mid=2247494450&amp;amp;idx=1&amp;amp;sn=389e3f6bbd89221bd46643ca6279d117&amp;amp;chksm=e9bffa1edec873080f725a6828fabfb02fa95850f61bdbf3310e55d6adee641451bfc753da1e&amp;amp;scene=21#wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzI0NjU2NDkzMQ==&amp;amp;mid=2247494450&amp;amp;idx=1&amp;amp;sn=389e3f6bbd89221bd46643ca6279d117&amp;amp;chksm=e9bffa1edec873080f725a6828fabfb02fa95850f61bdbf3310e55d6adee641451bfc753da1e&amp;amp;scene=21#wechat_redirect</a></p>
+]]></content>
+      <categories>
+        <category>数据治理</category>
+        <category>数据仓库</category>
+      </categories>
+      <tags>
+        <tag>Hive</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Hadoop-2.7.2高可用集群搭建(Ubuntu14.04)</title>
     <url>/2020/08/31/Hadoop-2.7.2%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/</url>
     <content><![CDATA[<p><strong>以root用户身份进行配置</strong></p>
@@ -131,6 +267,358 @@
       <tags>
         <tag>hadoop</tag>
         <tag>HA</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hive性能问题排查</title>
+    <url>/2023/05/13/Hive%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E6%96%B9%E5%BC%8F/</url>
+    <content><![CDATA[<h1 id="Hive性能问题排查"><a href="#Hive性能问题排查" class="headerlink" title="Hive性能问题排查"></a>Hive性能问题排查</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>当我们发现一条SQL语句执行时间过长或者不合预期时，就需要我们对SQL进行优化分析了。怎么找到问题所在呢？</p>
+<p>Hive SQL执行计划不像传统关系型数据库Oracle、SQL Server有真实的计划，可以看到各个阶段的处理数据、资源消耗、处理时间等量化数据。Hive的执行计划都是预测的，因此想要知道各个阶段的详细信息，只能查看Yarn提供的日志。日志链接在每个作业执行时给出，可以在控制台看到。</p>
+<p>Hive执行计划目前可以查看到：</p>
+<ol>
+<li>查看执行计划的基本信息，即explain；</li>
+<li>查看执行计划的扩展信息，即explain extended；</li>
+<li>查看SQL数据输入依赖的信息，即explain dependency；</li>
+<li>查看SQL操作相关权限的信息，即explain authorization；</li>
+<li>查看SQL的向量化描述信息，即explain vectorization。</li>
+</ol>
+<p>在SQL语句前加上explain关键词即可查看到执行计划的基本信息，基础的信息包括：</p>
+<ul>
+<li>作业的依赖关系图，即STAGE DEPENDENCIES；</li>
+<li>每个作业的详细信息，即STAGE PLANS。</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="Hive-性能调优手段"><a href="#Hive-性能调优手段" class="headerlink" title="Hive 性能调优手段"></a>Hive 性能调优手段</h2><ol>
+<li><strong>SQL语句优化</strong></li>
+</ol>
+<ul>
+<li><p>union all</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> stu <span class="keyword">partition</span>(tp) </span><br><span class="line"><span class="keyword">select</span> s_age,<span class="built_in">max</span>(s_birth) stat,<span class="string">&#x27;max&#x27;</span> tp </span><br><span class="line"><span class="keyword">from</span> stu_ori</span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> s_age</span><br><span class="line"></span><br><span class="line"><span class="keyword">union</span> <span class="keyword">all</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> stu <span class="keyword">partition</span>(tp) </span><br><span class="line"><span class="keyword">select</span> s_age,<span class="built_in">min</span>(s_birth) stat,<span class="string">&#x27;min&#x27;</span> tp </span><br><span class="line"><span class="keyword">from</span> stu_ori</span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> s_age;</span><br></pre></td></tr></table></figure>
+
+<p>上述SQL目标很清晰，分别计算s_age的最大和最小值放在一张表内。但是存在这种写法会对同一张表相同字段进行两次分组，浪费性能。可以使用<code>from ... insert into ...</code>，这个语法将from前置，作用就是使用一张表，可以进行多次插入操作:</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">--开启动态分区 </span></span><br><span class="line"><span class="keyword">set</span> hive.exec.dynamic.partition<span class="operator">=</span><span class="literal">true</span>; </span><br><span class="line"><span class="keyword">set</span> hive.exec.dynamic.partition.mode<span class="operator">=</span>nonstrict; </span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> stu_ori </span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> stu <span class="keyword">partition</span>(tp) </span><br><span class="line"><span class="keyword">select</span> s_age,<span class="built_in">max</span>(s_birth) stat,<span class="string">&#x27;max&#x27;</span> tp </span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> s_age</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">table</span> stu <span class="keyword">partition</span>(tp) </span><br><span class="line"><span class="keyword">select</span> s_age,<span class="built_in">min</span>(s_birth) stat,<span class="string">&#x27;min&#x27;</span> tp </span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> s_age;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>distinct</p>
+<p>去重统计：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(<span class="number">1</span>) </span><br><span class="line"><span class="keyword">from</span>( </span><br><span class="line">  <span class="keyword">select</span> s_age </span><br><span class="line">  <span class="keyword">from</span> stu </span><br><span class="line">  <span class="keyword">group</span> <span class="keyword">by</span> s_age </span><br><span class="line">) b;	</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(<span class="keyword">distinct</span> s_age) </span><br><span class="line"><span class="keyword">from</span> stu;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>上面进行去重的字段是年龄字段，但是年龄的枚举值是非常有限的，就算计算1岁到100岁之间的年龄，s_age的最大枚举值才100，如果转化成MapReduce来解释的话，在Map阶段，每个Map会对s_age去重。由于s_age枚举值有限，因而每个Map得到的s_age也有限，最终得到reduce的数据量也就是map数量s_age枚举值的个数。</li>
+<li>distinct的命令会在内存中构建一个hashtable，查找去重的时间复杂度是O(1)；group by在不同版本间变动比较大，有的版本会用构建hashtable的形式去重，有的版本会通过排序的方式， 排序最优时间复杂度无法到O(1)。另外，第一种方式(group by)去重会转化为两个任务，会消耗更多的磁盘网络I&#x2F;O资源。</li>
+<li>最新的Hive 3.0中新增了 count(distinct ) 优化，通过配置 hive.optimize.countdistinct，即使真的出现数据倾斜也可以自动优化，自动改变SQL执行的逻辑。</li>
+<li>第二种方式(distinct)比第一种方式(group by)代码简洁，表达的意思简单明了，如果没有特殊的问题，代码简洁就是优！</li>
+<li>数据格式优化</li>
+</ul>
+</li>
+</ul>
+<ol start="2">
+<li><p><strong>存储组织格式</strong></p>
+<p>Hive提供了多种数据存储组织格式，不同格式对程序的运行效率也会有极大的影响。</p>
+<p>Hive提供的格式有TEXT、SequenceFile、RCFile、ORC和Parquet等。</p>
+<p>SequenceFile是一个二进制key&#x2F;value对结构的平面文件，在早期的Hadoop平台上被广泛用于MapReduce输出&#x2F;输出格式，以及作为数据存储格式。</p>
+<p>Parquet是一种列式数据存储格式，可以兼容多种计算引擎，如MapRedcue和Spark等，对多层嵌套的数据结构提供了良好的性能支持，是目前Hive生产环境中数据存储的主流选择之一。</p>
+<p>ORC优化是对RCFile的一种优化，它提供了一种高效的方式来存储Hive数据，同时也能够提高Hive的读取、写入和处理数据的性能，能够兼容多种计算引擎。事实上，在实际的生产环境中，ORC已经成为了Hive在数据存储上的主流选择之一。</p>
+<p>我们使用同样数据及SQL语句，只是数据存储格式不同，得到如下执行时长：</p>
+<p><img src="F:\study\blog\source\images\数据存储格式对比.png" alt="数据存储格式对比"></p>
+<blockquote>
+<p>注：CPU时间：表示运行程序所占用服务器CPU资源的时间。用户等待耗时：记录的是用户从提交作业到返回结果期间用户等待的所有时间。</p>
+</blockquote>
+<p>查询TextFile类型的数据表耗时33分钟， 查询ORC类型的表耗时1分52秒，时间得以极大缩短，可见不同的数据存储格式也能给HiveSQL性能带来极大的影响。</p>
+</li>
+<li><p><strong>小文件过多优化</strong></p>
+<p>在Hive执行过程中，每个小文件都会对应一个Map任务，而这个Map任务启动和初始化的时间远远大于逻辑处理时间，非常浪费资源。并且，同时可运行的Map数是有限的。</p>
+</li>
+<li><p><strong>并行执行优化</strong></p>
+<p>​	Hive会将一个查询转化成一个或者多个阶段。这样的阶段可以是MapReduce阶段、抽样阶段、合并阶段、limit阶段，或者Hive执行过程中可能需要的其他阶段。默认情况下，Hive一次只会执行一个阶段。不过，某个特定的job可能包含众多的阶段，而这些阶段可能并非完全互相依赖的，也就是说有些阶段是可以并行执行的，这样可能使得整个job的执行时间缩短。如果有更多的阶段可以并行执行，那么job可能就越快完成。</p>
+<p>通过设置参数hive.exec.parallel值为true，就可以开启并发执行。在共享集群中，需要注意下，如果job中并行阶段增多，那么集群利用率就会增加。</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">set hive.exec.parallel=true; //打开任务并行执行</span><br><span class="line">set hive.exec.parallel.thread.number=16; //同一个sql允许最大并行度，默认为8。</span><br></pre></td></tr></table></figure>
+
+<p>注：需要资源充足该配置才有意义。</p>
+</li>
+<li><p>JVM优化</p>
+<p>​	JVM重用是Hadoop调优参数的内容，其对Hive的性能具有非常大的影响，特别是对于很难避免小文件的场景或task特别多的场景，这类场景大多数执行时间都很短。</p>
+<p>​	Hadoop的默认配置通常是使用派生JVM来执行map和Reduce任务的。这时JVM的启动过程可能会造成相当大的开销，尤其是执行的job包含有成百上千task任务的情况。JVM重用可以使得JVM实例在同一个job中重新使用N次。N的值可以在Hadoop的mapred-site.xml文件中进行配置。通常在10-20之间，具体多少需要根据具体业务场景测试得出。</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">name</span>&gt;</span>mapreduce.job.jvm.numtasks<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">value</span>&gt;</span>10<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">description</span>&gt;</span>How many tasks to run per jvm. If set to -1, there is</span><br><span class="line">  no limit. </span><br><span class="line">  <span class="tag">&lt;/<span class="name">description</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>我们也可以在hive中设置</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">set  mapred.job.reuse.jvm.num.tasks=10; //这个设置来设置我们的jvm重用</span><br></pre></td></tr></table></figure>
+
+<p><strong>这个功能的缺点是，开启JVM重用将一直占用使用到的task插槽，以便进行重用，直到任务完成后才能释放。如果某个“不平衡的”job中有某几个reduce task执行的时间要比其他Reduce task消耗的时间多的多的话，那么保留的插槽就会一直空闲着却无法被其他的job使用，直到所有的task都结束了才会释放</strong>。</p>
+</li>
+<li><p><strong>推测执行优化</strong></p>
+<p>​	在分布式集群环境下，因为程序Bug（包括Hadoop本身的bug），负载不均衡或者资源分布不均等原因，会造成同一个作业的多个任务之间运行速度不一致，有些任务的运行速度可能明显慢于其他任务（比如一个作业的某个任务进度只有50%，而其他所有任务已经运行完毕），则这些任务会拖慢作业的整体执行进度。为了避免这种情况发生，Hadoop采用了推测执行（Speculative Execution）机制，它根据一定的法则推测出“拖后腿”的任务，并为这样的任务启动一个备份任务，让该任务与原始任务同时处理同一份数据，并最终选用最先成功运行完成任务的计算结果作为最终结果。</p>
+<p>设置开启推测执行参数：Hadoop的mapred-site.xml文件中进行配置：</p>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">&lt;property&gt;</span><br><span class="line">  <span class="language-xml"><span class="tag">&lt;<span class="name">name</span>&gt;</span>mapreduce.map.speculative<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span></span><br><span class="line">  <span class="language-xml"><span class="tag">&lt;<span class="name">value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span></span><br><span class="line">  <span class="language-xml"><span class="tag">&lt;<span class="name">description</span>&gt;</span>If true, then multiple instances of some map tasks </span></span><br><span class="line"><span class="language-xml">               may be executed in parallel.<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span></span><br><span class="line">&lt;/property&gt;</span><br><span class="line"></span><br><span class="line"><span class="language-xml"><span class="tag">&lt;<span class="name">property</span>&gt;</span></span></span><br><span class="line"><span class="language-xml">  <span class="tag">&lt;<span class="name">name</span>&gt;</span>mapreduce.reduce.speculative<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span></span><br><span class="line"><span class="language-xml">  <span class="tag">&lt;<span class="name">value</span>&gt;</span>true<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span></span><br><span class="line"><span class="language-xml">  <span class="tag">&lt;<span class="name">description</span>&gt;</span>If true, then multiple instances of some reduce tasks </span></span><br><span class="line"><span class="language-xml">               may be executed in parallel.<span class="tag">&lt;/<span class="name">description</span>&gt;</span></span></span><br><span class="line"><span class="language-xml"><span class="tag">&lt;/<span class="name">property</span>&gt;</span></span></span><br></pre></td></tr></table></figure>
+
+<p>hive本身也提供了配置项来控制reduce-side的推测执行:</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">set hive.mapred.reduce.tasks.speculative.execution=true</span><br></pre></td></tr></table></figure>
+
+<p>​	如果用户对于运行时的偏差非常敏感的话，那么可以将这些功能关闭掉。如果用户因为输入数据量很大而需要执行长时间的map或者Reduce task的话，那么启动推测执行造成的浪费是非常巨大大。</p>
+</li>
+</ol>
+<p>代码优化原则：</p>
+<ul>
+<li>理透需求原则，这是优化的根本；</li>
+<li>把握数据全链路原则，这是优化的脉络；</li>
+<li>坚持代码的简洁原则，这让优化更加简单；</li>
+<li>没有瓶颈时谈论优化，这是自寻烦恼。</li>
+</ul>
+<p>[]: <a href="https://cloud.tencent.com/developer/article/1893127">https://cloud.tencent.com/developer/article/1893127</a></p>
+]]></content>
+      <categories>
+        <category>数据治理</category>
+        <category>数据仓库</category>
+      </categories>
+      <tags>
+        <tag>Hive</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hive执行计划分析</title>
+    <url>/2023/05/09/Hive%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92%E5%88%86%E6%9E%90/</url>
+    <content><![CDATA[<h1 id="Hive执行计划分析"><a href="#Hive执行计划分析" class="headerlink" title="Hive执行计划分析"></a>Hive执行计划分析</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Apache Hive作为构建数据仓库最常用的技术，借助SQL语法的简洁性，使得数据处理过程变得更易上手。但是，有一利必有一弊。易用性的背后是Hive技术实现了非常多的手段对各种场景的预判。业务场景千千万，再强的技术也不能一刀切，所以需要我们深入了解该技术是怎么执行我们的任务的，以及怎么根据现有任务的运行情况，通过参数设置、SQL调优、设计方案调整等手段来“多快好省”地解决我们的问题。</p>
+<span id="more"></span>
+
+<h2 id="Hive执行计划"><a href="#Hive执行计划" class="headerlink" title="Hive执行计划"></a>Hive执行计划</h2><p>Hive执行计划描述了SQL实际执行时是怎么被转换成计算引擎的执行逻辑的。了解并掌握了这些执行逻辑，有助于我们更好地分析程序的阻塞点，从而能有的放矢地解决性能问题。</p>
+<ul>
+<li><h3 id="查看SQL执行计划"><a href="#查看SQL执行计划" class="headerlink" title="查看SQL执行计划"></a>查看SQL执行计划</h3><ul>
+<li>explain:查看执行计划的基本信息</li>
+<li>explain dependency：可以查看到执行计划的输入信息，包含了各种属性。</li>
+<li>explain authorization：查看SQL操作相关权限的信息；</li>
+<li>explain vectorization：查看SQL的向量化描述信息，显示为什么未对Map和Reduce进行矢量化。从 Hive 2.3.0 开始支持；</li>
+<li>explain analyze：用实际的行数注释计划。从 Hive 2.2.0 开始支持；</li>
+</ul>
+<ol>
+<li><p><strong>explain的用法</strong></p>
+<p>语法：<code>explain query;</code></p>
+<p>例如：</p>
+<p>​	在Hive cli（Hive2.3.7）中输入：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">explain <span class="keyword">select</span> <span class="built_in">sum</span>(id) <span class="keyword">from</span> test1;</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">STAGE DEPENDENCIES:</span><br><span class="line">  Stage-1 is a root stage</span><br><span class="line">  Stage-0 depends on stages: Stage-1</span><br><span class="line"></span><br><span class="line">STAGE PLANS:</span><br><span class="line">  Stage: Stage-1</span><br><span class="line">    Map Reduce</span><br><span class="line">      Map Operator Tree:</span><br><span class="line">          TableScan</span><br><span class="line">            alias: test1</span><br><span class="line">            Statistics: Num rows: 6 Data size: 75 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">            Select Operator</span><br><span class="line">              expressions: id (type: int)</span><br><span class="line">              outputColumnNames: id</span><br><span class="line">              Statistics: Num rows: 6 Data size: 75 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">              Group By Operator</span><br><span class="line">                aggregations: sum(id)</span><br><span class="line">                mode: hash</span><br><span class="line">                outputColumnNames: _col0</span><br><span class="line">                Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">                Reduce Output Operator</span><br><span class="line">                  sort order:</span><br><span class="line">                  Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">                  value expressions: _col0 (type: bigint)</span><br><span class="line">      Reduce Operator Tree:</span><br><span class="line">        Group By Operator</span><br><span class="line">          aggregations: sum(VALUE._col0)</span><br><span class="line">          mode: mergepartial</span><br><span class="line">          outputColumnNames: _col0</span><br><span class="line">          Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">          File Output Operator</span><br><span class="line">            compressed: false</span><br><span class="line">            Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">            table:</span><br><span class="line">                input format: org.apache.hadoop.mapred.SequenceFileInputFormat</span><br><span class="line">                output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat</span><br><span class="line">                serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe</span><br><span class="line"></span><br><span class="line">  Stage: Stage-0</span><br><span class="line">    Fetch Operator</span><br><span class="line">      limit: -1</span><br><span class="line">      Processor Tree:</span><br><span class="line">        ListSink</span><br></pre></td></tr></table></figure>
+
+<p>上述可以看出，一个Hive查询会被划分为多个stage组成的DAG。</p>
+<p>stage的类型包括：</p>
+<ul>
+<li>MapReduceStage</li>
+<li>负责元数据的stage</li>
+<li>负责文件系统操作的stage</li>
+</ul>
+<p>上述explain包含的两大部分：</p>
+<p>先看第一部分 stage dependencies，描述了stage之间的依赖关系。</p>
+<ul>
+<li>stage dependencies：各个stage之间的依赖性</li>
+<li>stage plan：各个stage的执行计划</li>
+</ul>
+<p>再看第二部分 stage plan，里面有一个 Map Reduce，一个MR的执行计划分为两个部分：</p>
+<ul>
+<li>Map Operator Tree：MAP端的执行计划树</li>
+<li>Reduce Operator Tree：Reduce端的执行计划树</li>
+</ul>
+<p>这两个执行计划树里面包含这条sql语句的 operator：</p>
+<ol>
+<li><p>TableScan：表扫描操作，map端第一个操作肯定是加载表，所以就是表扫描操作，常见的属性：</p>
+<ul>
+<li><p>alias：表名称</p>
+</li>
+<li><p>Statistics：表统计信息，包含表中数据条数，数据大小等</p>
+</li>
+</ul>
+</li>
+<li><p>Select Operator：选取操作，常见的属性 ：</p>
+<ul>
+<li><p>expressions：需要的字段名称及字段类型</p>
+</li>
+<li><p>outputColumnNames：输出的列名称</p>
+</li>
+<li><p>Statistics：表统计信息，包含表中数据条数，数据大小等</p>
+</li>
+</ul>
+</li>
+<li><p>Group By Operator：分组聚合操作，常见的属性：</p>
+<ul>
+<li><p>aggregations：显示聚合函数信息</p>
+</li>
+<li><p>mode：聚合模式，值有 hash：随机聚合，就是hash partition；partial：局部聚合；final：最终聚合</p>
+</li>
+<li><p>keys：分组的字段，如果没有分组，则没有此字段</p>
+</li>
+<li><p>outputColumnNames：聚合之后输出列名</p>
+</li>
+<li><p>Statistics：表统计信息，包含分组聚合之后的数据条数，数据大小等</p>
+</li>
+</ul>
+</li>
+<li><p>Reduce Output Operator：输出到reduce操作，常见属性：</p>
+<ul>
+<li>sort order：值为空 不排序；值为 + 正序排序，值为 - 倒序排序；值为 +- 排序的列为两列，第一列为正序，第二列为倒序</li>
+<li>Statistics：表统计信息，包含分组聚合之后的数据条数，数据大小等</li>
+</ul>
+</li>
+<li><p>Filter Operator：过滤操作，常见的属性：</p>
+<ul>
+<li>predicate：过滤条件，如sql语句中的where id&gt;&#x3D;1，则此处显示(id &gt;&#x3D; 1)</li>
+</ul>
+</li>
+<li><p>Map Join Operator：join 操作，常见的属性：</p>
+<ul>
+<li><p>condition map：join方式 ，如Inner Join 0 to 1 Left Outer Join0 to 2</p>
+</li>
+<li><p>keys: join 的条件字段</p>
+</li>
+<li><p>outputColumnNames：join 完成之后输出的字段</p>
+</li>
+<li><p>Statistics：join 完成之后生成的数据条数，大小等</p>
+</li>
+</ul>
+</li>
+<li><p>File Output Operator：文件输出操作，常见的属性</p>
+<ul>
+<li><p>compressed：是否压缩</p>
+</li>
+<li><p>table：表的信息，包含输入输出文件格式化方式，序列化方式等</p>
+</li>
+</ul>
+</li>
+<li><p>Fetch Operator 客户端获取数据操作，常见的属性：</p>
+<ul>
+<li>limit，值为 -1 表示不限制条数，其他值为限制的条数</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><p><strong>explain的使用场景</strong></p>
+<ol>
+<li><p>join 语句会过滤 null 的值吗？</p>
+<p>现在，我们在hive cli 输入以下查询计划语句</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> a.id,b.user_name <span class="keyword">from</span> test1 a <span class="keyword">join</span> test2 b <span class="keyword">on</span> a.id<span class="operator">=</span>b.id;</span><br></pre></td></tr></table></figure>
+
+<p>问：上面这条 join 语句会过滤 id 为 null 的值吗</p>
+<p>执行下面语句：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">explain <span class="keyword">select</span> a.id,b.user_name <span class="keyword">from</span> test1 a <span class="keyword">join</span> test2 b <span class="keyword">on</span> a.id<span class="operator">=</span>b.id;</span><br></pre></td></tr></table></figure>
+
+<p>我们来看结果 (为了适应页面展示，仅截取了部分输出信息)：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">TableScan</span><br><span class="line"> alias: a</span><br><span class="line"> Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line"> <span class="keyword">Filter</span> Operator</span><br><span class="line">    predicate: id <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">null</span> (type: <span class="type">boolean</span>)</span><br><span class="line">    Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">    <span class="keyword">Select</span> Operator</span><br><span class="line">        expressions: id (type: <span class="type">int</span>)</span><br><span class="line">        outputColumnNames: _col0</span><br><span class="line">        Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">        HashTable Sink Operator</span><br><span class="line">           keys:</span><br><span class="line">             <span class="number">0</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">             <span class="number">1</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line"> ...</span><br></pre></td></tr></table></figure>
+
+<p>从上述结果可以看到 predicate: id is not null 这样一行，说明 join 时会自动过滤掉关联字段为 null 值的情况，但 left join 或 full join 是不会自动过滤null值的.</p>
+</li>
+<li><p>group by 分组语句会进行排序吗？</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> id,<span class="built_in">max</span>(user_name) <span class="keyword">from</span> test1 <span class="keyword">group</span> <span class="keyword">by</span> id;</span><br></pre></td></tr></table></figure>
+
+<p>explain的 结果 (为了适应页面展示，仅截取了部分输出信息)</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">TableScan</span><br><span class="line">   alias: test1</span><br><span class="line">   Statistics: Num <span class="keyword">rows</span>: <span class="number">9</span> Data size: <span class="number">108</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">   <span class="keyword">Select</span> Operator</span><br><span class="line">       expressions: id (type: <span class="type">int</span>), user_name (type: string)</span><br><span class="line">       outputColumnNames: id, user_name</span><br><span class="line">       Statistics: Num <span class="keyword">rows</span>: <span class="number">9</span> Data size: <span class="number">108</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">       <span class="keyword">Group</span> <span class="keyword">By</span> Operator</span><br><span class="line">          aggregations: <span class="built_in">max</span>(user_name)</span><br><span class="line">          keys: id (type: <span class="type">int</span>)</span><br><span class="line">          mode: hash</span><br><span class="line">          outputColumnNames: _col0, _col1</span><br><span class="line">          Statistics: Num <span class="keyword">rows</span>: <span class="number">9</span> Data size: <span class="number">108</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">          Reduce Output Operator</span><br><span class="line">            key expressions: _col0 (type: <span class="type">int</span>)</span><br><span class="line">            sort <span class="keyword">order</span>: <span class="operator">+</span></span><br><span class="line">            Map<span class="operator">-</span>reduce <span class="keyword">partition</span> columns: _col0 (type: <span class="type">int</span>)</span><br><span class="line">            Statistics: Num <span class="keyword">rows</span>: <span class="number">9</span> Data size: <span class="number">108</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">            <span class="keyword">value</span> expressions: _col1 (type: string)</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>我们看 Group By Operator，里面有 keys: id (type: int) 说明按照 id 进行分组的，再往下看还有 sort order: + ，说明是按照 id 字段进行正序排序的。</p>
+</li>
+<li><p>哪条sql执行效率高呢？</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> a.id,</span><br><span class="line"> b.user_name</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> test1 a</span><br><span class="line"><span class="keyword">JOIN</span> test2 b <span class="keyword">ON</span> a.id <span class="operator">=</span> b.id</span><br><span class="line"><span class="keyword">WHERE</span></span><br><span class="line"> a.id <span class="operator">&gt;</span> <span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> a.id,</span><br><span class="line"> b.user_name</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> (<span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> test1 <span class="keyword">WHERE</span> id <span class="operator">&gt;</span> <span class="number">2</span>) a</span><br><span class="line"><span class="keyword">JOIN</span> test2 b <span class="keyword">ON</span> a.id <span class="operator">=</span> b.id;</span><br></pre></td></tr></table></figure>
+
+<p>第一条sql explain:</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">hive (<span class="keyword">default</span>)<span class="operator">&gt;</span> explain <span class="keyword">select</span> a.id,b.user_name <span class="keyword">from</span> test1 a <span class="keyword">join</span> test2 b <span class="keyword">on</span> a.id<span class="operator">=</span>b.id <span class="keyword">where</span> a.id <span class="operator">&gt;</span><span class="number">2</span>;</span><br><span class="line">OK</span><br><span class="line">Explain</span><br><span class="line">STAGE DEPENDENCIES:</span><br><span class="line">  Stage<span class="number">-4</span> <span class="keyword">is</span> a root stage</span><br><span class="line">  Stage<span class="number">-3</span> depends <span class="keyword">on</span> stages: Stage<span class="number">-4</span></span><br><span class="line">  Stage<span class="number">-0</span> depends <span class="keyword">on</span> stages: Stage<span class="number">-3</span></span><br><span class="line"></span><br><span class="line">STAGE PLANS:</span><br><span class="line">  Stage: Stage<span class="number">-4</span></span><br><span class="line">    Map Reduce <span class="keyword">Local</span> Work</span><br><span class="line">      Alias <span class="operator">-</span><span class="operator">&gt;</span> Map <span class="keyword">Local</span> Tables:</span><br><span class="line">        $hdt$_0:a</span><br><span class="line">          <span class="keyword">Fetch</span> Operator</span><br><span class="line">            limit: <span class="number">-1</span></span><br><span class="line">      Alias <span class="operator">-</span><span class="operator">&gt;</span> Map <span class="keyword">Local</span> Operator Tree:</span><br><span class="line">        $hdt$_0:a</span><br><span class="line">          TableScan</span><br><span class="line">            alias: a</span><br><span class="line">            Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">            <span class="keyword">Filter</span> Operator</span><br><span class="line">              predicate: (id <span class="operator">&gt;</span> <span class="number">2</span>) (type: <span class="type">boolean</span>)</span><br><span class="line">              Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">              <span class="keyword">Select</span> Operator</span><br><span class="line">                expressions: id (type: <span class="type">int</span>)</span><br><span class="line">                outputColumnNames: _col0</span><br><span class="line">                Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                HashTable Sink Operator</span><br><span class="line">                  keys:</span><br><span class="line">                    <span class="number">0</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                    <span class="number">1</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line"></span><br><span class="line">  Stage: Stage<span class="number">-3</span></span><br><span class="line">    Map Reduce</span><br><span class="line">      Map Operator Tree:</span><br><span class="line">          TableScan</span><br><span class="line">            alias: b</span><br><span class="line">            Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">            <span class="keyword">Filter</span> Operator</span><br><span class="line">              predicate: (id <span class="operator">&gt;</span> <span class="number">2</span>) (type: <span class="type">boolean</span>)</span><br><span class="line">              Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">              <span class="keyword">Select</span> Operator</span><br><span class="line">                expressions: id (type: <span class="type">int</span>), user_name (type: string)</span><br><span class="line">                outputColumnNames: _col0, _col1</span><br><span class="line">                Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                Map <span class="keyword">Join</span> Operator</span><br><span class="line">                  <span class="keyword">condition</span> map:</span><br><span class="line">                       <span class="keyword">Inner</span> <span class="keyword">Join</span> <span class="number">0</span> <span class="keyword">to</span> <span class="number">1</span></span><br><span class="line">                  keys:</span><br><span class="line">                    <span class="number">0</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                    <span class="number">1</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                  outputColumnNames: _col0, _col2</span><br><span class="line">                  Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                  <span class="keyword">Select</span> Operator</span><br><span class="line">                    expressions: _col0 (type: <span class="type">int</span>), _col2 (type: string)</span><br><span class="line">                    outputColumnNames: _col0, _col1</span><br><span class="line">                    Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                    File Output Operator</span><br><span class="line">                      compressed: <span class="literal">false</span></span><br><span class="line">                      Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                      <span class="keyword">table</span>:</span><br><span class="line">                          input format: org.apache.hadoop.mapred.SequenceFileInputFormat</span><br><span class="line">                          output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat</span><br><span class="line">                          serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe</span><br><span class="line">      <span class="keyword">Local</span> Work:</span><br><span class="line">        Map Reduce <span class="keyword">Local</span> Work</span><br><span class="line"></span><br><span class="line">  Stage: Stage<span class="number">-0</span></span><br><span class="line">    <span class="keyword">Fetch</span> Operator</span><br><span class="line">      limit: <span class="number">-1</span></span><br><span class="line">      Processor Tree:</span><br><span class="line">        ListSink</span><br></pre></td></tr></table></figure>
+
+<p>第二条sql explain:</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">hive (<span class="keyword">default</span>)<span class="operator">&gt;</span> explain <span class="keyword">select</span> a.id,b.user_name <span class="keyword">from</span>(<span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span>  test1 <span class="keyword">where</span> id<span class="operator">&gt;</span><span class="number">2</span> ) a <span class="keyword">join</span> test2 b <span class="keyword">on</span> a.id<span class="operator">=</span>b.id;</span><br><span class="line">OK</span><br><span class="line">Explain</span><br><span class="line">STAGE DEPENDENCIES:</span><br><span class="line">  Stage<span class="number">-4</span> <span class="keyword">is</span> a root stage</span><br><span class="line">  Stage<span class="number">-3</span> depends <span class="keyword">on</span> stages: Stage<span class="number">-4</span></span><br><span class="line">  Stage<span class="number">-0</span> depends <span class="keyword">on</span> stages: Stage<span class="number">-3</span></span><br><span class="line"></span><br><span class="line">STAGE PLANS:</span><br><span class="line">  Stage: Stage<span class="number">-4</span></span><br><span class="line">    Map Reduce <span class="keyword">Local</span> Work</span><br><span class="line">      Alias <span class="operator">-</span><span class="operator">&gt;</span> Map <span class="keyword">Local</span> Tables:</span><br><span class="line">        $hdt$_0:test1</span><br><span class="line">          <span class="keyword">Fetch</span> Operator</span><br><span class="line">            limit: <span class="number">-1</span></span><br><span class="line">      Alias <span class="operator">-</span><span class="operator">&gt;</span> Map <span class="keyword">Local</span> Operator Tree:</span><br><span class="line">        $hdt$_0:test1</span><br><span class="line">          TableScan</span><br><span class="line">            alias: test1</span><br><span class="line">            Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">            <span class="keyword">Filter</span> Operator</span><br><span class="line">              predicate: (id <span class="operator">&gt;</span> <span class="number">2</span>) (type: <span class="type">boolean</span>)</span><br><span class="line">              Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">              <span class="keyword">Select</span> Operator</span><br><span class="line">                expressions: id (type: <span class="type">int</span>)</span><br><span class="line">                outputColumnNames: _col0</span><br><span class="line">                Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                HashTable Sink Operator</span><br><span class="line">                  keys:</span><br><span class="line">                    <span class="number">0</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                    <span class="number">1</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line"></span><br><span class="line">  Stage: Stage<span class="number">-3</span></span><br><span class="line">    Map Reduce</span><br><span class="line">      Map Operator Tree:</span><br><span class="line">          TableScan</span><br><span class="line">            alias: b</span><br><span class="line">            Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">            <span class="keyword">Filter</span> Operator</span><br><span class="line">              predicate: (id <span class="operator">&gt;</span> <span class="number">2</span>) (type: <span class="type">boolean</span>)</span><br><span class="line">              Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">              <span class="keyword">Select</span> Operator</span><br><span class="line">                expressions: id (type: <span class="type">int</span>), user_name (type: string)</span><br><span class="line">                outputColumnNames: _col0, _col1</span><br><span class="line">                Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                Map <span class="keyword">Join</span> Operator</span><br><span class="line">                  <span class="keyword">condition</span> map:</span><br><span class="line">                       <span class="keyword">Inner</span> <span class="keyword">Join</span> <span class="number">0</span> <span class="keyword">to</span> <span class="number">1</span></span><br><span class="line">                  keys:</span><br><span class="line">                    <span class="number">0</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                    <span class="number">1</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                  outputColumnNames: _col0, _col2</span><br><span class="line">                  Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                  <span class="keyword">Select</span> Operator</span><br><span class="line">                    expressions: _col0 (type: <span class="type">int</span>), _col2 (type: string)</span><br><span class="line">                    outputColumnNames: _col0, _col1</span><br><span class="line">                    Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                    File Output Operator</span><br><span class="line">                      compressed: <span class="literal">false</span></span><br><span class="line">                      Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                      <span class="keyword">table</span>:</span><br><span class="line">                          input format: org.apache.hadoop.mapred.SequenceFileInputFormat</span><br><span class="line">                          output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat</span><br><span class="line">                          serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe</span><br><span class="line">      <span class="keyword">Local</span> Work:</span><br><span class="line">        Map Reduce <span class="keyword">Local</span> Work</span><br><span class="line"></span><br><span class="line">  Stage: Stage<span class="number">-0</span></span><br><span class="line">    <span class="keyword">Fetch</span> Operator</span><br><span class="line">      limit: <span class="number">-1</span></span><br><span class="line">      Processor Tree:</span><br><span class="line">        ListSink</span><br></pre></td></tr></table></figure>
+
+<p>通过执行计划可以看出，两条SQL在执行时都时先进行 where 条件过滤，在进行 join 条件关联。因此执行效率是一样的。</p>
+</li>
+</ol>
+</li>
+<li><p><strong>explain dependency的用法</strong></p>
+<p>explain dependency用于描述一段SQL需要的数据来源，输出是一个json格式的数据，里面包含以下两个部分的内容：</p>
+<ul>
+<li>input_partitions：描述一段SQL依赖的数据来源表分区，里面存储的是分区名的列表，如果整段SQL包含的所有表都是非分区表，则显示为空。</li>
+<li>input_tables：描述一段SQL依赖的数据来源表，里面存储的是Hive表名的列表。</li>
+</ul>
+<p>使用explain dependency查看SQL查询非分区普通表，在 hive cli 中输入以下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">explain dependency select s_age,count(1) num from student_orc;</span><br></pre></td></tr></table></figure>
+
+<p>得到结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;:[],&quot;input_tables&quot;:[&#123;&quot;tablename&quot;:&quot;default@student_tb _orc&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用explain dependency查看SQL查询分区表，在 hive cli 中输入以下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">explain dependency select s_age,count(1) num from student_orc_partition;</span><br></pre></td></tr></table></figure>
+
+<p>得到结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;:[&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@ part=0&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=1&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=2&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=3&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=4&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=5&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=6&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=7&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=8&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=9&quot;&#125;], </span><br><span class="line">&quot;input_tables&quot;:[&#123;&quot;tablename&quot;:&quot;default@student_orc_partition&quot;, &quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]</span><br></pre></td></tr></table></figure>
+
+<p>explain dependency的使用场景有两个：</p>
+<ul>
+<li>场景一：快速排除。快速排除因为读取不到相应分区的数据而导致任务数据输出异常。例如，在一个以天分区的任务中，上游任务因为生产过程不可控因素出现异常或者空跑，导致下游任务引发异常。通过这种方式，可以快速查看SQL读取的分区是否出现异常。</li>
+<li>场景二：理清表的输入，帮助理解程序的运行，特别是有助于理解有多重子查询，多表连接的依赖输入</li>
+</ul>
+<p>案例：</p>
+<ol>
+<li><p>识别看似等价的代码</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> a <span class="keyword">inner</span> <span class="keyword">join</span> b <span class="keyword">on</span> a.no<span class="operator">=</span>b.no <span class="keyword">and</span> a.f<span class="operator">&gt;</span><span class="number">1</span> <span class="keyword">and</span> a.f<span class="operator">&lt;</span><span class="number">3</span>;</span><br></pre></td></tr></table></figure>
+
+<p>与</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> a <span class="keyword">inner</span> <span class="keyword">join</span> b <span class="keyword">on</span> a.no<span class="operator">=</span>b.no <span class="keyword">where</span> a.f<span class="operator">&gt;</span><span class="number">1</span> <span class="keyword">and</span> a.f<span class="operator">&lt;</span><span class="number">3</span>;</span><br></pre></td></tr></table></figure>
+
+<p>是否等价？</p>
+<p>代码1：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> </span><br><span class="line">a.s_no </span><br><span class="line"><span class="keyword">from</span> student_orc_partition a </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span> </span><br><span class="line">student_orc_partition_only b </span><br><span class="line"><span class="keyword">on</span> a.s_no<span class="operator">=</span>b.s_no <span class="keyword">and</span> a.part<span class="operator">=</span>b.part <span class="keyword">and</span> a.part<span class="operator">&gt;=</span><span class="number">1</span> <span class="keyword">and</span> a.part<span class="operator">&lt;=</span><span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>代码2：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> </span><br><span class="line">a.s_no </span><br><span class="line"><span class="keyword">from</span> student_orc_partition a </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span> </span><br><span class="line">student_orc_partition_only b </span><br><span class="line"><span class="keyword">on</span> a.s_no<span class="operator">=</span>b.s_no <span class="keyword">and</span> a.part<span class="operator">=</span>b.part </span><br><span class="line"><span class="keyword">where</span> a.part<span class="operator">&gt;=</span><span class="number">1</span> <span class="keyword">and</span> a.part<span class="operator">&lt;=</span><span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>我们看下上述两段代码explain dependency的输出结果：</p>
+<p>代码1的explain dependency结果：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;: </span><br><span class="line">[&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=0&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=1&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=2&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=1&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=2&quot;&#125;], </span><br><span class="line">&quot;input_tables&quot;: [&#123;&quot;tablename&quot;:&quot;default@student_orc_partition&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;, &#123;&quot;tablename&quot;:&quot;default@student_orc_partition_only&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码2的explain dependency结果：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;: </span><br><span class="line">[&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=1&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot; : &quot;default@student_orc_partition@part=2&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot; :&quot;default@student_orc_partition_only@part=1&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=2&quot;&#125;], </span><br><span class="line">&quot;input_tables&quot;: [&#123;&quot;tablename&quot;:&quot;default@student_orc_partition&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;, &#123;&quot;tablename&quot;:&quot;default@student_orc_partition_only&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过上面的输出结果可以看到，其实上述的两个SQL并不等价，代码1在内连接（inner join）中的连接条件（on）中加入非等值的过滤条件后，并没有将内连接的左右两个表按照过滤条件进行过滤，内连接在执行时会多读取part&#x3D;0的分区数据。而在代码2中，会过滤掉不符合条件的分区。</p>
+</li>
+<li><p>识别SQL读取数据范围的差别</p>
+<p>代码1：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">explain dependency</span><br><span class="line"><span class="keyword">select</span></span><br><span class="line">a.s_no </span><br><span class="line"><span class="keyword">from</span> student_orc_partition a </span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> </span><br><span class="line">student_orc_partition_only b </span><br><span class="line"><span class="keyword">on</span> a.s_no<span class="operator">=</span>b.s_no <span class="keyword">and</span> a.part<span class="operator">=</span>b.part <span class="keyword">and</span> b.part<span class="operator">&gt;=</span><span class="number">1</span> <span class="keyword">and</span> b.part<span class="operator">&lt;=</span><span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>代码2：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">explain dependency </span><br><span class="line"><span class="keyword">select</span> </span><br><span class="line">a.s_no </span><br><span class="line"><span class="keyword">from</span> student_orc_partition a </span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> </span><br><span class="line">student_orc_partition_only b </span><br><span class="line"><span class="keyword">on</span> a.s_no<span class="operator">=</span>b.s_no <span class="keyword">and</span> a.part<span class="operator">=</span>b.part <span class="keyword">and</span> a.part<span class="operator">&gt;=</span><span class="number">1</span> <span class="keyword">and</span> a.part<span class="operator">&lt;=</span><span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>以上两个代码的数据读取范围是一样的吗？答案是不一样，我们通过explain dependency来看下：</p>
+<p>代码1的explain dependency结果：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;: </span><br><span class="line">[&#123;&quot;partitionName&quot;: &quot;default@student_orc_partition@part=0&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=1&quot;&#125;, …中间省略<span class="number">7</span>个分区</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=9&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=1&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=2&quot;&#125;], </span><br><span class="line">&quot;input_tables&quot;: [&#123;&quot;tablename&quot;:&quot;default@student_orc_partition&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;, &#123;&quot;tablename&quot;:&quot;default@student_orc_partition_only&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码2的explain dependency结果：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;: </span><br><span class="line">[&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=0&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=1&quot;&#125;, …中间省略<span class="number">7</span>个分区 </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=9&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=0&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=1&quot;&#125;, …中间省略<span class="number">7</span>个分区 </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=9&quot;&#125;],</span><br><span class="line">&quot;input_tables&quot;: [&#123;&quot;tablename&quot;:&quot;default@student_orc_partition&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;, &#123;&quot;tablename&quot;:&quot;default@student_orc_partition_only&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，对左外连接在连接条件中加入非等值过滤的条件，如果过滤条件是作用于右表（b表）有起到过滤的效果，则右表只要扫描两个分区即可，但是左表（a表）会进行全表扫描。如果过滤条件是针对左表，则完全没有起到过滤的作用，那么两个表将进行全表扫描。这时的情况就如同全外连接一样都需要对两个数据进行全表扫描。</p>
+<p>在使用过程中，容易认为代码片段2可以像代码片段1一样进行数据过滤，通过查看explain dependency的输出结果，可以知道不是如此。</p>
+</li>
+</ol>
+</li>
+<li><p><strong>explain authorization 的用法</strong></p>
+<p>通过explain authorization可以知道当前SQL访问的数据来源（INPUTS） 和数据输出（OUTPUTS），以及当前Hive的访问用户 （CURRENT_USER）和操作（OPERATION）。</p>
+<p>在 hive cli 中输入以下命令：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">explain <span class="keyword">authorization</span> </span><br><span class="line"><span class="keyword">select</span> variance(s_score) <span class="keyword">from</span> student_tb_orc;</span><br></pre></td></tr></table></figure>
+
+<p>结果如下：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">INPUTS: </span><br><span class="line">  <span class="keyword">default</span><span class="variable">@student_tb_orc</span> </span><br><span class="line">OUTPUTS: </span><br><span class="line">  hdfs:<span class="operator">/</span><span class="operator">/</span>node01:<span class="number">8020</span><span class="operator">/</span>tmp<span class="operator">/</span>hive<span class="operator">/</span>hdfs<span class="operator">/</span>cbf182a5<span class="number">-8258</span><span class="number">-4157</span><span class="number">-9194</span><span class="operator">-</span> <span class="number">90</span>f1475a3ed5<span class="operator">/</span><span class="operator">-</span>mr<span class="number">-10000</span> </span><br><span class="line"><span class="built_in">CURRENT_USER</span>: </span><br><span class="line">  hdfs </span><br><span class="line">OPERATION: </span><br><span class="line">  QUERY </span><br><span class="line">AUTHORIZATION_FAILURES: </span><br><span class="line">  <span class="keyword">No</span> privilege <span class="string">&#x27;Select&#x27;</span> found <span class="keyword">for</span> inputs &#123; database:<span class="keyword">default</span>, <span class="keyword">table</span>:student_ tb_orc, columnName:s_score&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上面的信息可知：</p>
+<p>上面案例的数据来源是defalut数据库中的 student_tb_orc表；</p>
+<p>数据的输出路径是hdfs:&#x2F;&#x2F;node01:8020&#x2F;tmp&#x2F;hive&#x2F;hdfs&#x2F;cbf182a5-8258-4157-9194-90f1475a3ed5&#x2F;-mr-10000；</p>
+<p>当前的操作用户是hdfs，操作是查询；</p>
+<p>观察上面的信息我们还会看到AUTHORIZATION_FAILURES信息，提示对当前的输入没有查询权限，但如果运行上面的SQL的话也能够正常运行。为什么会出现这种情况？Hive在默认不配置权限管理的情况下不进行权限验证，所有的用户在Hive里面都是超级管理员，即使不对特定的用户进行赋权，也能够正常查询。</p>
+</li>
+</ol>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>数据治理</category>
+        <category>数据仓库</category>
+      </categories>
+      <tags>
+        <tag>Hive</tag>
       </tags>
   </entry>
   <entry>
@@ -681,13 +1169,13 @@ A -&gt; D -&gt; X(2.0)
         <category>数据治理</category>
       </categories>
       <tags>
-        <tag>OneData</tag>
         <tag>Hive</tag>
+        <tag>OneData</tag>
       </tags>
   </entry>
   <entry>
     <title>LCX中运行copilot-service</title>
-    <url>/2024/04/23/PVE%E4%B8%8BLCX%E8%BF%90%E8%A1%8Ccopilot-gpt4-service/</url>
+    <url>/2024/04/24/PVE%E4%B8%8BLCX%E8%BF%90%E8%A1%8Ccopilot-gpt4-service/</url>
     <content><![CDATA[<h1 id="LCX中运行copilot-service"><a href="#LCX中运行copilot-service" class="headerlink" title="LCX中运行copilot-service"></a>LCX中运行copilot-service</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>​		LXC 是一个知名的 <strong>Linux 容器运行时</strong>，包括各类工具、模板、库以及语言绑定。 它非常底层，相当灵活，并覆盖了上游内核支持的几乎所有与容器相关的功能。copilot-gpt4-service用来帮助我们转发对ChatGPT4的请求。本文记录里怎么在PVE下的LCX中运行copilot-service。</p>
 <span id="more"></span>
 
@@ -727,7 +1215,7 @@ A -&gt; D -&gt; X(2.0)
   </entry>
   <entry>
     <title>PVE8.0下为LCX添加TUN接口</title>
-    <url>/2024/04/23/PVE%E4%B8%8B%E4%B8%BALCX%E6%B7%BB%E5%8A%A0TUN%E6%8E%A5%E5%8F%A3/</url>
+    <url>/2024/04/24/PVE%E4%B8%8B%E4%B8%BALCX%E6%B7%BB%E5%8A%A0TUN%E6%8E%A5%E5%8F%A3/</url>
     <content><![CDATA[<h1 id="PVE8-0下为LCX添加TUN接口"><a href="#PVE8-0下为LCX添加TUN接口" class="headerlink" title="PVE8.0下为LCX添加TUN接口"></a>PVE8.0下为LCX添加TUN接口</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>家里有台老笔记本最近安装了PVE，做ALL IN ONE测试。我希望在不同的机器上都可以使用copilot-service提供的服务。但是无奈没有一个稳定的公网IP，因此只能退而求其次，使用ZeroTier来做内网穿透服务。ZeroTier是通过绑定 &#x2F;dev&#x2F;net&#x2F;tun 这个tun接口来进行组网的，然鹅，PVE下使用CT创建的LXC默认都没有这个接口，因此需要为它添加这个接口。</p>
 <span id="more"></span>
 

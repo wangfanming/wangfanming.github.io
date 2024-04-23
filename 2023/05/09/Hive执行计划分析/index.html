@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.wfanming.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":10,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Hive执行计划分析背景Apache Hive作为构建数据仓库最常用的技术，借助SQL语法的简洁性，使得数据处理过程变得更易上手。但是，有一利必有一弊。易用性的背后是Hive技术实现了非常多的手段对各种场景的预判。业务场景千千万，再强的技术也不能一刀切，所以需要我们深入了解该技术是怎么执行我们的任务的，以及怎么根据现有任务的运行情况，通过参数设置、SQL调优、设计方案调整等手段来“多快好省”地解决">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hive执行计划分析">
+<meta property="og:url" content="https://www.wfanming.top/2023/05/09/Hive%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="Duncan&#39;s Blog">
+<meta property="og:description" content="Hive执行计划分析背景Apache Hive作为构建数据仓库最常用的技术，借助SQL语法的简洁性，使得数据处理过程变得更易上手。但是，有一利必有一弊。易用性的背后是Hive技术实现了非常多的手段对各种场景的预判。业务场景千千万，再强的技术也不能一刀切，所以需要我们深入了解该技术是怎么执行我们的任务的，以及怎么根据现有任务的运行情况，通过参数设置、SQL调优、设计方案调整等手段来“多快好省”地解决">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-05-09T08:16:32.000Z">
+<meta property="article:modified_time" content="2024-04-23T16:02:18.839Z">
+<meta property="article:author" content="Wang Fanming">
+<meta property="article:tag" content="Hive">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.wfanming.top/2023/05/09/Hive%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92%E5%88%86%E6%9E%90/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Hive执行计划分析 | Duncan's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Duncan's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">何以解忧，唯有学习</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/wangfanming" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2023/05/09/Hive%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Wang Fanming">
+      <meta itemprop="description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Duncan's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Hive执行计划分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-05-09 16:16:32" itemprop="dateCreated datePublished" datetime="2023-05-09T16:16:32+08:00">2023-05-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-04-24 00:02:18" itemprop="dateModified" datetime="2024-04-24T00:02:18+08:00">2024-04-24</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E6%B2%BB%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">数据治理</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E6%B2%BB%E7%90%86/%E6%95%B0%E6%8D%AE%E4%BB%93%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据仓库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>15k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>14 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Hive执行计划分析"><a href="#Hive执行计划分析" class="headerlink" title="Hive执行计划分析"></a>Hive执行计划分析</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Apache Hive作为构建数据仓库最常用的技术，借助SQL语法的简洁性，使得数据处理过程变得更易上手。但是，有一利必有一弊。易用性的背后是Hive技术实现了非常多的手段对各种场景的预判。业务场景千千万，再强的技术也不能一刀切，所以需要我们深入了解该技术是怎么执行我们的任务的，以及怎么根据现有任务的运行情况，通过参数设置、SQL调优、设计方案调整等手段来“多快好省”地解决我们的问题。</p>
+<span id="more"></span>
+
+<h2 id="Hive执行计划"><a href="#Hive执行计划" class="headerlink" title="Hive执行计划"></a>Hive执行计划</h2><p>Hive执行计划描述了SQL实际执行时是怎么被转换成计算引擎的执行逻辑的。了解并掌握了这些执行逻辑，有助于我们更好地分析程序的阻塞点，从而能有的放矢地解决性能问题。</p>
+<ul>
+<li><h3 id="查看SQL执行计划"><a href="#查看SQL执行计划" class="headerlink" title="查看SQL执行计划"></a>查看SQL执行计划</h3><ul>
+<li>explain:查看执行计划的基本信息</li>
+<li>explain dependency：可以查看到执行计划的输入信息，包含了各种属性。</li>
+<li>explain authorization：查看SQL操作相关权限的信息；</li>
+<li>explain vectorization：查看SQL的向量化描述信息，显示为什么未对Map和Reduce进行矢量化。从 Hive 2.3.0 开始支持；</li>
+<li>explain analyze：用实际的行数注释计划。从 Hive 2.2.0 开始支持；</li>
+</ul>
+<ol>
+<li><p><strong>explain的用法</strong></p>
+<p>语法：<code>explain query;</code></p>
+<p>例如：</p>
+<p>​	在Hive cli（Hive2.3.7）中输入：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">explain <span class="keyword">select</span> <span class="built_in">sum</span>(id) <span class="keyword">from</span> test1;</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">STAGE DEPENDENCIES:</span><br><span class="line">  Stage-1 is a root stage</span><br><span class="line">  Stage-0 depends on stages: Stage-1</span><br><span class="line"></span><br><span class="line">STAGE PLANS:</span><br><span class="line">  Stage: Stage-1</span><br><span class="line">    Map Reduce</span><br><span class="line">      Map Operator Tree:</span><br><span class="line">          TableScan</span><br><span class="line">            alias: test1</span><br><span class="line">            Statistics: Num rows: 6 Data size: 75 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">            Select Operator</span><br><span class="line">              expressions: id (type: int)</span><br><span class="line">              outputColumnNames: id</span><br><span class="line">              Statistics: Num rows: 6 Data size: 75 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">              Group By Operator</span><br><span class="line">                aggregations: sum(id)</span><br><span class="line">                mode: hash</span><br><span class="line">                outputColumnNames: _col0</span><br><span class="line">                Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">                Reduce Output Operator</span><br><span class="line">                  sort order:</span><br><span class="line">                  Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">                  value expressions: _col0 (type: bigint)</span><br><span class="line">      Reduce Operator Tree:</span><br><span class="line">        Group By Operator</span><br><span class="line">          aggregations: sum(VALUE._col0)</span><br><span class="line">          mode: mergepartial</span><br><span class="line">          outputColumnNames: _col0</span><br><span class="line">          Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">          File Output Operator</span><br><span class="line">            compressed: false</span><br><span class="line">            Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE</span><br><span class="line">            table:</span><br><span class="line">                input format: org.apache.hadoop.mapred.SequenceFileInputFormat</span><br><span class="line">                output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat</span><br><span class="line">                serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe</span><br><span class="line"></span><br><span class="line">  Stage: Stage-0</span><br><span class="line">    Fetch Operator</span><br><span class="line">      limit: -1</span><br><span class="line">      Processor Tree:</span><br><span class="line">        ListSink</span><br></pre></td></tr></table></figure>
+
+<p>上述可以看出，一个Hive查询会被划分为多个stage组成的DAG。</p>
+<p>stage的类型包括：</p>
+<ul>
+<li>MapReduceStage</li>
+<li>负责元数据的stage</li>
+<li>负责文件系统操作的stage</li>
+</ul>
+<p>上述explain包含的两大部分：</p>
+<p>先看第一部分 stage dependencies，描述了stage之间的依赖关系。</p>
+<ul>
+<li>stage dependencies：各个stage之间的依赖性</li>
+<li>stage plan：各个stage的执行计划</li>
+</ul>
+<p>再看第二部分 stage plan，里面有一个 Map Reduce，一个MR的执行计划分为两个部分：</p>
+<ul>
+<li>Map Operator Tree：MAP端的执行计划树</li>
+<li>Reduce Operator Tree：Reduce端的执行计划树</li>
+</ul>
+<p>这两个执行计划树里面包含这条sql语句的 operator：</p>
+<ol>
+<li><p>TableScan：表扫描操作，map端第一个操作肯定是加载表，所以就是表扫描操作，常见的属性：</p>
+<ul>
+<li><p>alias：表名称</p>
+</li>
+<li><p>Statistics：表统计信息，包含表中数据条数，数据大小等</p>
+</li>
+</ul>
+</li>
+<li><p>Select Operator：选取操作，常见的属性 ：</p>
+<ul>
+<li><p>expressions：需要的字段名称及字段类型</p>
+</li>
+<li><p>outputColumnNames：输出的列名称</p>
+</li>
+<li><p>Statistics：表统计信息，包含表中数据条数，数据大小等</p>
+</li>
+</ul>
+</li>
+<li><p>Group By Operator：分组聚合操作，常见的属性：</p>
+<ul>
+<li><p>aggregations：显示聚合函数信息</p>
+</li>
+<li><p>mode：聚合模式，值有 hash：随机聚合，就是hash partition；partial：局部聚合；final：最终聚合</p>
+</li>
+<li><p>keys：分组的字段，如果没有分组，则没有此字段</p>
+</li>
+<li><p>outputColumnNames：聚合之后输出列名</p>
+</li>
+<li><p>Statistics：表统计信息，包含分组聚合之后的数据条数，数据大小等</p>
+</li>
+</ul>
+</li>
+<li><p>Reduce Output Operator：输出到reduce操作，常见属性：</p>
+<ul>
+<li>sort order：值为空 不排序；值为 + 正序排序，值为 - 倒序排序；值为 +- 排序的列为两列，第一列为正序，第二列为倒序</li>
+<li>Statistics：表统计信息，包含分组聚合之后的数据条数，数据大小等</li>
+</ul>
+</li>
+<li><p>Filter Operator：过滤操作，常见的属性：</p>
+<ul>
+<li>predicate：过滤条件，如sql语句中的where id&gt;&#x3D;1，则此处显示(id &gt;&#x3D; 1)</li>
+</ul>
+</li>
+<li><p>Map Join Operator：join 操作，常见的属性：</p>
+<ul>
+<li><p>condition map：join方式 ，如Inner Join 0 to 1 Left Outer Join0 to 2</p>
+</li>
+<li><p>keys: join 的条件字段</p>
+</li>
+<li><p>outputColumnNames：join 完成之后输出的字段</p>
+</li>
+<li><p>Statistics：join 完成之后生成的数据条数，大小等</p>
+</li>
+</ul>
+</li>
+<li><p>File Output Operator：文件输出操作，常见的属性</p>
+<ul>
+<li><p>compressed：是否压缩</p>
+</li>
+<li><p>table：表的信息，包含输入输出文件格式化方式，序列化方式等</p>
+</li>
+</ul>
+</li>
+<li><p>Fetch Operator 客户端获取数据操作，常见的属性：</p>
+<ul>
+<li>limit，值为 -1 表示不限制条数，其他值为限制的条数</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><p><strong>explain的使用场景</strong></p>
+<ol>
+<li><p>join 语句会过滤 null 的值吗？</p>
+<p>现在，我们在hive cli 输入以下查询计划语句</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> a.id,b.user_name <span class="keyword">from</span> test1 a <span class="keyword">join</span> test2 b <span class="keyword">on</span> a.id<span class="operator">=</span>b.id;</span><br></pre></td></tr></table></figure>
+
+<p>问：上面这条 join 语句会过滤 id 为 null 的值吗</p>
+<p>执行下面语句：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">explain <span class="keyword">select</span> a.id,b.user_name <span class="keyword">from</span> test1 a <span class="keyword">join</span> test2 b <span class="keyword">on</span> a.id<span class="operator">=</span>b.id;</span><br></pre></td></tr></table></figure>
+
+<p>我们来看结果 (为了适应页面展示，仅截取了部分输出信息)：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">TableScan</span><br><span class="line"> alias: a</span><br><span class="line"> Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line"> <span class="keyword">Filter</span> Operator</span><br><span class="line">    predicate: id <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">null</span> (type: <span class="type">boolean</span>)</span><br><span class="line">    Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">    <span class="keyword">Select</span> Operator</span><br><span class="line">        expressions: id (type: <span class="type">int</span>)</span><br><span class="line">        outputColumnNames: _col0</span><br><span class="line">        Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">        HashTable Sink Operator</span><br><span class="line">           keys:</span><br><span class="line">             <span class="number">0</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">             <span class="number">1</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line"> ...</span><br></pre></td></tr></table></figure>
+
+<p>从上述结果可以看到 predicate: id is not null 这样一行，说明 join 时会自动过滤掉关联字段为 null 值的情况，但 left join 或 full join 是不会自动过滤null值的.</p>
+</li>
+<li><p>group by 分组语句会进行排序吗？</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> id,<span class="built_in">max</span>(user_name) <span class="keyword">from</span> test1 <span class="keyword">group</span> <span class="keyword">by</span> id;</span><br></pre></td></tr></table></figure>
+
+<p>explain的 结果 (为了适应页面展示，仅截取了部分输出信息)</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">TableScan</span><br><span class="line">   alias: test1</span><br><span class="line">   Statistics: Num <span class="keyword">rows</span>: <span class="number">9</span> Data size: <span class="number">108</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">   <span class="keyword">Select</span> Operator</span><br><span class="line">       expressions: id (type: <span class="type">int</span>), user_name (type: string)</span><br><span class="line">       outputColumnNames: id, user_name</span><br><span class="line">       Statistics: Num <span class="keyword">rows</span>: <span class="number">9</span> Data size: <span class="number">108</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">       <span class="keyword">Group</span> <span class="keyword">By</span> Operator</span><br><span class="line">          aggregations: <span class="built_in">max</span>(user_name)</span><br><span class="line">          keys: id (type: <span class="type">int</span>)</span><br><span class="line">          mode: hash</span><br><span class="line">          outputColumnNames: _col0, _col1</span><br><span class="line">          Statistics: Num <span class="keyword">rows</span>: <span class="number">9</span> Data size: <span class="number">108</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">          Reduce Output Operator</span><br><span class="line">            key expressions: _col0 (type: <span class="type">int</span>)</span><br><span class="line">            sort <span class="keyword">order</span>: <span class="operator">+</span></span><br><span class="line">            Map<span class="operator">-</span>reduce <span class="keyword">partition</span> columns: _col0 (type: <span class="type">int</span>)</span><br><span class="line">            Statistics: Num <span class="keyword">rows</span>: <span class="number">9</span> Data size: <span class="number">108</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">            <span class="keyword">value</span> expressions: _col1 (type: string)</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>我们看 Group By Operator，里面有 keys: id (type: int) 说明按照 id 进行分组的，再往下看还有 sort order: + ，说明是按照 id 字段进行正序排序的。</p>
+</li>
+<li><p>哪条sql执行效率高呢？</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> a.id,</span><br><span class="line"> b.user_name</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> test1 a</span><br><span class="line"><span class="keyword">JOIN</span> test2 b <span class="keyword">ON</span> a.id <span class="operator">=</span> b.id</span><br><span class="line"><span class="keyword">WHERE</span></span><br><span class="line"> a.id <span class="operator">&gt;</span> <span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line"> a.id,</span><br><span class="line"> b.user_name</span><br><span class="line"><span class="keyword">FROM</span></span><br><span class="line"> (<span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> test1 <span class="keyword">WHERE</span> id <span class="operator">&gt;</span> <span class="number">2</span>) a</span><br><span class="line"><span class="keyword">JOIN</span> test2 b <span class="keyword">ON</span> a.id <span class="operator">=</span> b.id;</span><br></pre></td></tr></table></figure>
+
+<p>第一条sql explain:</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">hive (<span class="keyword">default</span>)<span class="operator">&gt;</span> explain <span class="keyword">select</span> a.id,b.user_name <span class="keyword">from</span> test1 a <span class="keyword">join</span> test2 b <span class="keyword">on</span> a.id<span class="operator">=</span>b.id <span class="keyword">where</span> a.id <span class="operator">&gt;</span><span class="number">2</span>;</span><br><span class="line">OK</span><br><span class="line">Explain</span><br><span class="line">STAGE DEPENDENCIES:</span><br><span class="line">  Stage<span class="number">-4</span> <span class="keyword">is</span> a root stage</span><br><span class="line">  Stage<span class="number">-3</span> depends <span class="keyword">on</span> stages: Stage<span class="number">-4</span></span><br><span class="line">  Stage<span class="number">-0</span> depends <span class="keyword">on</span> stages: Stage<span class="number">-3</span></span><br><span class="line"></span><br><span class="line">STAGE PLANS:</span><br><span class="line">  Stage: Stage<span class="number">-4</span></span><br><span class="line">    Map Reduce <span class="keyword">Local</span> Work</span><br><span class="line">      Alias <span class="operator">-</span><span class="operator">&gt;</span> Map <span class="keyword">Local</span> Tables:</span><br><span class="line">        $hdt$_0:a</span><br><span class="line">          <span class="keyword">Fetch</span> Operator</span><br><span class="line">            limit: <span class="number">-1</span></span><br><span class="line">      Alias <span class="operator">-</span><span class="operator">&gt;</span> Map <span class="keyword">Local</span> Operator Tree:</span><br><span class="line">        $hdt$_0:a</span><br><span class="line">          TableScan</span><br><span class="line">            alias: a</span><br><span class="line">            Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">            <span class="keyword">Filter</span> Operator</span><br><span class="line">              predicate: (id <span class="operator">&gt;</span> <span class="number">2</span>) (type: <span class="type">boolean</span>)</span><br><span class="line">              Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">              <span class="keyword">Select</span> Operator</span><br><span class="line">                expressions: id (type: <span class="type">int</span>)</span><br><span class="line">                outputColumnNames: _col0</span><br><span class="line">                Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                HashTable Sink Operator</span><br><span class="line">                  keys:</span><br><span class="line">                    <span class="number">0</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                    <span class="number">1</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line"></span><br><span class="line">  Stage: Stage<span class="number">-3</span></span><br><span class="line">    Map Reduce</span><br><span class="line">      Map Operator Tree:</span><br><span class="line">          TableScan</span><br><span class="line">            alias: b</span><br><span class="line">            Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">            <span class="keyword">Filter</span> Operator</span><br><span class="line">              predicate: (id <span class="operator">&gt;</span> <span class="number">2</span>) (type: <span class="type">boolean</span>)</span><br><span class="line">              Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">              <span class="keyword">Select</span> Operator</span><br><span class="line">                expressions: id (type: <span class="type">int</span>), user_name (type: string)</span><br><span class="line">                outputColumnNames: _col0, _col1</span><br><span class="line">                Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                Map <span class="keyword">Join</span> Operator</span><br><span class="line">                  <span class="keyword">condition</span> map:</span><br><span class="line">                       <span class="keyword">Inner</span> <span class="keyword">Join</span> <span class="number">0</span> <span class="keyword">to</span> <span class="number">1</span></span><br><span class="line">                  keys:</span><br><span class="line">                    <span class="number">0</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                    <span class="number">1</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                  outputColumnNames: _col0, _col2</span><br><span class="line">                  Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                  <span class="keyword">Select</span> Operator</span><br><span class="line">                    expressions: _col0 (type: <span class="type">int</span>), _col2 (type: string)</span><br><span class="line">                    outputColumnNames: _col0, _col1</span><br><span class="line">                    Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                    File Output Operator</span><br><span class="line">                      compressed: <span class="literal">false</span></span><br><span class="line">                      Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                      <span class="keyword">table</span>:</span><br><span class="line">                          input format: org.apache.hadoop.mapred.SequenceFileInputFormat</span><br><span class="line">                          output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat</span><br><span class="line">                          serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe</span><br><span class="line">      <span class="keyword">Local</span> Work:</span><br><span class="line">        Map Reduce <span class="keyword">Local</span> Work</span><br><span class="line"></span><br><span class="line">  Stage: Stage<span class="number">-0</span></span><br><span class="line">    <span class="keyword">Fetch</span> Operator</span><br><span class="line">      limit: <span class="number">-1</span></span><br><span class="line">      Processor Tree:</span><br><span class="line">        ListSink</span><br></pre></td></tr></table></figure>
+
+<p>第二条sql explain:</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">hive (<span class="keyword">default</span>)<span class="operator">&gt;</span> explain <span class="keyword">select</span> a.id,b.user_name <span class="keyword">from</span>(<span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span>  test1 <span class="keyword">where</span> id<span class="operator">&gt;</span><span class="number">2</span> ) a <span class="keyword">join</span> test2 b <span class="keyword">on</span> a.id<span class="operator">=</span>b.id;</span><br><span class="line">OK</span><br><span class="line">Explain</span><br><span class="line">STAGE DEPENDENCIES:</span><br><span class="line">  Stage<span class="number">-4</span> <span class="keyword">is</span> a root stage</span><br><span class="line">  Stage<span class="number">-3</span> depends <span class="keyword">on</span> stages: Stage<span class="number">-4</span></span><br><span class="line">  Stage<span class="number">-0</span> depends <span class="keyword">on</span> stages: Stage<span class="number">-3</span></span><br><span class="line"></span><br><span class="line">STAGE PLANS:</span><br><span class="line">  Stage: Stage<span class="number">-4</span></span><br><span class="line">    Map Reduce <span class="keyword">Local</span> Work</span><br><span class="line">      Alias <span class="operator">-</span><span class="operator">&gt;</span> Map <span class="keyword">Local</span> Tables:</span><br><span class="line">        $hdt$_0:test1</span><br><span class="line">          <span class="keyword">Fetch</span> Operator</span><br><span class="line">            limit: <span class="number">-1</span></span><br><span class="line">      Alias <span class="operator">-</span><span class="operator">&gt;</span> Map <span class="keyword">Local</span> Operator Tree:</span><br><span class="line">        $hdt$_0:test1</span><br><span class="line">          TableScan</span><br><span class="line">            alias: test1</span><br><span class="line">            Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">            <span class="keyword">Filter</span> Operator</span><br><span class="line">              predicate: (id <span class="operator">&gt;</span> <span class="number">2</span>) (type: <span class="type">boolean</span>)</span><br><span class="line">              Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">              <span class="keyword">Select</span> Operator</span><br><span class="line">                expressions: id (type: <span class="type">int</span>)</span><br><span class="line">                outputColumnNames: _col0</span><br><span class="line">                Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                HashTable Sink Operator</span><br><span class="line">                  keys:</span><br><span class="line">                    <span class="number">0</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                    <span class="number">1</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line"></span><br><span class="line">  Stage: Stage<span class="number">-3</span></span><br><span class="line">    Map Reduce</span><br><span class="line">      Map Operator Tree:</span><br><span class="line">          TableScan</span><br><span class="line">            alias: b</span><br><span class="line">            Statistics: Num <span class="keyword">rows</span>: <span class="number">6</span> Data size: <span class="number">75</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">            <span class="keyword">Filter</span> Operator</span><br><span class="line">              predicate: (id <span class="operator">&gt;</span> <span class="number">2</span>) (type: <span class="type">boolean</span>)</span><br><span class="line">              Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">              <span class="keyword">Select</span> Operator</span><br><span class="line">                expressions: id (type: <span class="type">int</span>), user_name (type: string)</span><br><span class="line">                outputColumnNames: _col0, _col1</span><br><span class="line">                Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">25</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                Map <span class="keyword">Join</span> Operator</span><br><span class="line">                  <span class="keyword">condition</span> map:</span><br><span class="line">                       <span class="keyword">Inner</span> <span class="keyword">Join</span> <span class="number">0</span> <span class="keyword">to</span> <span class="number">1</span></span><br><span class="line">                  keys:</span><br><span class="line">                    <span class="number">0</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                    <span class="number">1</span> _col0 (type: <span class="type">int</span>)</span><br><span class="line">                  outputColumnNames: _col0, _col2</span><br><span class="line">                  Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                  <span class="keyword">Select</span> Operator</span><br><span class="line">                    expressions: _col0 (type: <span class="type">int</span>), _col2 (type: string)</span><br><span class="line">                    outputColumnNames: _col0, _col1</span><br><span class="line">                    Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                    File Output Operator</span><br><span class="line">                      compressed: <span class="literal">false</span></span><br><span class="line">                      Statistics: Num <span class="keyword">rows</span>: <span class="number">2</span> Data size: <span class="number">27</span> Basic stats: COMPLETE <span class="keyword">Column</span> stats: <span class="keyword">NONE</span></span><br><span class="line">                      <span class="keyword">table</span>:</span><br><span class="line">                          input format: org.apache.hadoop.mapred.SequenceFileInputFormat</span><br><span class="line">                          output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat</span><br><span class="line">                          serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe</span><br><span class="line">      <span class="keyword">Local</span> Work:</span><br><span class="line">        Map Reduce <span class="keyword">Local</span> Work</span><br><span class="line"></span><br><span class="line">  Stage: Stage<span class="number">-0</span></span><br><span class="line">    <span class="keyword">Fetch</span> Operator</span><br><span class="line">      limit: <span class="number">-1</span></span><br><span class="line">      Processor Tree:</span><br><span class="line">        ListSink</span><br></pre></td></tr></table></figure>
+
+<p>通过执行计划可以看出，两条SQL在执行时都时先进行 where 条件过滤，在进行 join 条件关联。因此执行效率是一样的。</p>
+</li>
+</ol>
+</li>
+<li><p><strong>explain dependency的用法</strong></p>
+<p>explain dependency用于描述一段SQL需要的数据来源，输出是一个json格式的数据，里面包含以下两个部分的内容：</p>
+<ul>
+<li>input_partitions：描述一段SQL依赖的数据来源表分区，里面存储的是分区名的列表，如果整段SQL包含的所有表都是非分区表，则显示为空。</li>
+<li>input_tables：描述一段SQL依赖的数据来源表，里面存储的是Hive表名的列表。</li>
+</ul>
+<p>使用explain dependency查看SQL查询非分区普通表，在 hive cli 中输入以下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">explain dependency select s_age,count(1) num from student_orc;</span><br></pre></td></tr></table></figure>
+
+<p>得到结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;:[],&quot;input_tables&quot;:[&#123;&quot;tablename&quot;:&quot;default@student_tb _orc&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用explain dependency查看SQL查询分区表，在 hive cli 中输入以下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">explain dependency select s_age,count(1) num from student_orc_partition;</span><br></pre></td></tr></table></figure>
+
+<p>得到结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;:[&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@ part=0&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=1&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=2&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=3&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=4&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=5&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=6&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=7&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=8&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=9&quot;&#125;], </span><br><span class="line">&quot;input_tables&quot;:[&#123;&quot;tablename&quot;:&quot;default@student_orc_partition&quot;, &quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]</span><br></pre></td></tr></table></figure>
+
+<p>explain dependency的使用场景有两个：</p>
+<ul>
+<li>场景一：快速排除。快速排除因为读取不到相应分区的数据而导致任务数据输出异常。例如，在一个以天分区的任务中，上游任务因为生产过程不可控因素出现异常或者空跑，导致下游任务引发异常。通过这种方式，可以快速查看SQL读取的分区是否出现异常。</li>
+<li>场景二：理清表的输入，帮助理解程序的运行，特别是有助于理解有多重子查询，多表连接的依赖输入</li>
+</ul>
+<p>案例：</p>
+<ol>
+<li><p>识别看似等价的代码</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> a <span class="keyword">inner</span> <span class="keyword">join</span> b <span class="keyword">on</span> a.no<span class="operator">=</span>b.no <span class="keyword">and</span> a.f<span class="operator">&gt;</span><span class="number">1</span> <span class="keyword">and</span> a.f<span class="operator">&lt;</span><span class="number">3</span>;</span><br></pre></td></tr></table></figure>
+
+<p>与</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> a <span class="keyword">inner</span> <span class="keyword">join</span> b <span class="keyword">on</span> a.no<span class="operator">=</span>b.no <span class="keyword">where</span> a.f<span class="operator">&gt;</span><span class="number">1</span> <span class="keyword">and</span> a.f<span class="operator">&lt;</span><span class="number">3</span>;</span><br></pre></td></tr></table></figure>
+
+<p>是否等价？</p>
+<p>代码1：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> </span><br><span class="line">a.s_no </span><br><span class="line"><span class="keyword">from</span> student_orc_partition a </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span> </span><br><span class="line">student_orc_partition_only b </span><br><span class="line"><span class="keyword">on</span> a.s_no<span class="operator">=</span>b.s_no <span class="keyword">and</span> a.part<span class="operator">=</span>b.part <span class="keyword">and</span> a.part<span class="operator">&gt;=</span><span class="number">1</span> <span class="keyword">and</span> a.part<span class="operator">&lt;=</span><span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>代码2：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> </span><br><span class="line">a.s_no </span><br><span class="line"><span class="keyword">from</span> student_orc_partition a </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span> </span><br><span class="line">student_orc_partition_only b </span><br><span class="line"><span class="keyword">on</span> a.s_no<span class="operator">=</span>b.s_no <span class="keyword">and</span> a.part<span class="operator">=</span>b.part </span><br><span class="line"><span class="keyword">where</span> a.part<span class="operator">&gt;=</span><span class="number">1</span> <span class="keyword">and</span> a.part<span class="operator">&lt;=</span><span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>我们看下上述两段代码explain dependency的输出结果：</p>
+<p>代码1的explain dependency结果：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;: </span><br><span class="line">[&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=0&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=1&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=2&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=1&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=2&quot;&#125;], </span><br><span class="line">&quot;input_tables&quot;: [&#123;&quot;tablename&quot;:&quot;default@student_orc_partition&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;, &#123;&quot;tablename&quot;:&quot;default@student_orc_partition_only&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码2的explain dependency结果：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;: </span><br><span class="line">[&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=1&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot; : &quot;default@student_orc_partition@part=2&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot; :&quot;default@student_orc_partition_only@part=1&quot;&#125;,</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=2&quot;&#125;], </span><br><span class="line">&quot;input_tables&quot;: [&#123;&quot;tablename&quot;:&quot;default@student_orc_partition&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;, &#123;&quot;tablename&quot;:&quot;default@student_orc_partition_only&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过上面的输出结果可以看到，其实上述的两个SQL并不等价，代码1在内连接（inner join）中的连接条件（on）中加入非等值的过滤条件后，并没有将内连接的左右两个表按照过滤条件进行过滤，内连接在执行时会多读取part&#x3D;0的分区数据。而在代码2中，会过滤掉不符合条件的分区。</p>
+</li>
+<li><p>识别SQL读取数据范围的差别</p>
+<p>代码1：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">explain dependency</span><br><span class="line"><span class="keyword">select</span></span><br><span class="line">a.s_no </span><br><span class="line"><span class="keyword">from</span> student_orc_partition a </span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> </span><br><span class="line">student_orc_partition_only b </span><br><span class="line"><span class="keyword">on</span> a.s_no<span class="operator">=</span>b.s_no <span class="keyword">and</span> a.part<span class="operator">=</span>b.part <span class="keyword">and</span> b.part<span class="operator">&gt;=</span><span class="number">1</span> <span class="keyword">and</span> b.part<span class="operator">&lt;=</span><span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>代码2：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">explain dependency </span><br><span class="line"><span class="keyword">select</span> </span><br><span class="line">a.s_no </span><br><span class="line"><span class="keyword">from</span> student_orc_partition a </span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> </span><br><span class="line">student_orc_partition_only b </span><br><span class="line"><span class="keyword">on</span> a.s_no<span class="operator">=</span>b.s_no <span class="keyword">and</span> a.part<span class="operator">=</span>b.part <span class="keyword">and</span> a.part<span class="operator">&gt;=</span><span class="number">1</span> <span class="keyword">and</span> a.part<span class="operator">&lt;=</span><span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>以上两个代码的数据读取范围是一样的吗？答案是不一样，我们通过explain dependency来看下：</p>
+<p>代码1的explain dependency结果：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;: </span><br><span class="line">[&#123;&quot;partitionName&quot;: &quot;default@student_orc_partition@part=0&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=1&quot;&#125;, …中间省略<span class="number">7</span>个分区</span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=9&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=1&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=2&quot;&#125;], </span><br><span class="line">&quot;input_tables&quot;: [&#123;&quot;tablename&quot;:&quot;default@student_orc_partition&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;, &#123;&quot;tablename&quot;:&quot;default@student_orc_partition_only&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码2的explain dependency结果：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">&#123;&quot;input_partitions&quot;: </span><br><span class="line">[&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=0&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=1&quot;&#125;, …中间省略<span class="number">7</span>个分区 </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition@part=9&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=0&quot;&#125;, </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=1&quot;&#125;, …中间省略<span class="number">7</span>个分区 </span><br><span class="line">&#123;&quot;partitionName&quot;:&quot;default@student_orc_partition_only@part=9&quot;&#125;],</span><br><span class="line">&quot;input_tables&quot;: [&#123;&quot;tablename&quot;:&quot;default@student_orc_partition&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;, &#123;&quot;tablename&quot;:&quot;default@student_orc_partition_only&quot;,&quot;tabletype&quot;:&quot;MANAGED_TABLE&quot;&#125;]&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，对左外连接在连接条件中加入非等值过滤的条件，如果过滤条件是作用于右表（b表）有起到过滤的效果，则右表只要扫描两个分区即可，但是左表（a表）会进行全表扫描。如果过滤条件是针对左表，则完全没有起到过滤的作用，那么两个表将进行全表扫描。这时的情况就如同全外连接一样都需要对两个数据进行全表扫描。</p>
+<p>在使用过程中，容易认为代码片段2可以像代码片段1一样进行数据过滤，通过查看explain dependency的输出结果，可以知道不是如此。</p>
+</li>
+</ol>
+</li>
+<li><p><strong>explain authorization 的用法</strong></p>
+<p>通过explain authorization可以知道当前SQL访问的数据来源（INPUTS） 和数据输出（OUTPUTS），以及当前Hive的访问用户 （CURRENT_USER）和操作（OPERATION）。</p>
+<p>在 hive cli 中输入以下命令：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">explain <span class="keyword">authorization</span> </span><br><span class="line"><span class="keyword">select</span> variance(s_score) <span class="keyword">from</span> student_tb_orc;</span><br></pre></td></tr></table></figure>
+
+<p>结果如下：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line">INPUTS: </span><br><span class="line">  <span class="keyword">default</span><span class="variable">@student_tb_orc</span> </span><br><span class="line">OUTPUTS: </span><br><span class="line">  hdfs:<span class="operator">/</span><span class="operator">/</span>node01:<span class="number">8020</span><span class="operator">/</span>tmp<span class="operator">/</span>hive<span class="operator">/</span>hdfs<span class="operator">/</span>cbf182a5<span class="number">-8258</span><span class="number">-4157</span><span class="number">-9194</span><span class="operator">-</span> <span class="number">90</span>f1475a3ed5<span class="operator">/</span><span class="operator">-</span>mr<span class="number">-10000</span> </span><br><span class="line"><span class="built_in">CURRENT_USER</span>: </span><br><span class="line">  hdfs </span><br><span class="line">OPERATION: </span><br><span class="line">  QUERY </span><br><span class="line">AUTHORIZATION_FAILURES: </span><br><span class="line">  <span class="keyword">No</span> privilege <span class="string">&#x27;Select&#x27;</span> found <span class="keyword">for</span> inputs &#123; database:<span class="keyword">default</span>, <span class="keyword">table</span>:student_ tb_orc, columnName:s_score&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上面的信息可知：</p>
+<p>上面案例的数据来源是defalut数据库中的 student_tb_orc表；</p>
+<p>数据的输出路径是hdfs:&#x2F;&#x2F;node01:8020&#x2F;tmp&#x2F;hive&#x2F;hdfs&#x2F;cbf182a5-8258-4157-9194-90f1475a3ed5&#x2F;-mr-10000；</p>
+<p>当前的操作用户是hdfs，操作是查询；</p>
+<p>观察上面的信息我们还会看到AUTHORIZATION_FAILURES信息，提示对当前的输入没有查询权限，但如果运行上面的SQL的话也能够正常运行。为什么会出现这种情况？Hive在默认不配置权限管理的情况下不进行权限验证，所有的用户在Hive里面都是超级管理员，即使不对特定的用户进行赋权，也能够正常查询。</p>
+</li>
+</ol>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Hive/" rel="tag"># Hive</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/04/28/HQL%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%80%BE%E6%96%9C%E5%A4%84%E7%90%86/" rel="prev" title="Hive SQL编译原理与数据倾斜处理">
+      <i class="fa fa-chevron-left"></i> Hive SQL编译原理与数据倾斜处理
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/05/13/Hive%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5%E6%96%B9%E5%BC%8F/" rel="next" title="Hive性能问题排查">
+      Hive性能问题排查 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Hive%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92%E5%88%86%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text">Hive执行计划分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Hive%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92"><span class="nav-number">1.2.</span> <span class="nav-text">Hive执行计划</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8BSQL%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92"><span class="nav-number">1.2.1.</span> <span class="nav-text">查看SQL执行计划</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Wang Fanming</p>
+  <div class="site-description" itemprop="description">吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">22</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wangfanming" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wangfanming" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/wangfanming1204@gmail.com" title="E-Mail → wangfanming1204@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Wang Fanming</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">110k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">1:40</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
