@@ -686,7 +686,7 @@ A -&gt; D -&gt; X(2.0)
       </tags>
   </entry>
   <entry>
-    <title></title>
+    <title>LCX中运行copilot-service</title>
     <url>/2024/04/23/PVE%E4%B8%8BLCX%E8%BF%90%E8%A1%8Ccopilot-gpt4-service/</url>
     <content><![CDATA[<h1 id="LCX中运行copilot-service"><a href="#LCX中运行copilot-service" class="headerlink" title="LCX中运行copilot-service"></a>LCX中运行copilot-service</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>​		LXC 是一个知名的 <strong>Linux 容器运行时</strong>，包括各类工具、模板、库以及语言绑定。 它非常底层，相当灵活，并覆盖了上游内核支持的几乎所有与容器相关的功能。copilot-gpt4-service用来帮助我们转发对ChatGPT4的请求。本文记录里怎么在PVE下的LCX中运行copilot-service。</p>
 <span id="more"></span>
@@ -718,6 +718,12 @@ A -&gt; D -&gt; X(2.0)
 </li>
 </ol>
 ]]></content>
+      <categories>
+        <category>虚拟化</category>
+      </categories>
+      <tags>
+        <tag>LCX</tag>
+      </tags>
   </entry>
   <entry>
     <title>Spark collect方法分析-Driver端</title>
