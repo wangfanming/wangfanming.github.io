@@ -726,6 +726,36 @@ A -&gt; D -&gt; X(2.0)
       </tags>
   </entry>
   <entry>
+    <title>PVE8.0下为LCX添加TUN接口</title>
+    <url>/2024/04/23/PVE%E4%B8%8B%E4%B8%BALCX%E6%B7%BB%E5%8A%A0TUN%E6%8E%A5%E5%8F%A3/</url>
+    <content><![CDATA[<h1 id="PVE8-0下为LCX添加TUN接口"><a href="#PVE8-0下为LCX添加TUN接口" class="headerlink" title="PVE8.0下为LCX添加TUN接口"></a>PVE8.0下为LCX添加TUN接口</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>家里有台老笔记本最近安装了PVE，做ALL IN ONE测试。我希望在不同的机器上都可以使用copilot-service提供的服务。但是无奈没有一个稳定的公网IP，因此只能退而求其次，使用ZeroTier来做内网穿透服务。ZeroTier是通过绑定 &#x2F;dev&#x2F;net&#x2F;tun 这个tun接口来进行组网的，然鹅，PVE下使用CT创建的LXC默认都没有这个接口，因此需要为它添加这个接口。</p>
+<span id="more"></span>
+
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><ul>
+<li><h3 id="无特权容器"><a href="#无特权容器" class="headerlink" title="无特权容器"></a>无特权容器</h3><ul>
+<li><p>修改pve主机（宿主机）的<code>/etc/pve/nodes/pve/lxc/101.conf</code>，101为LCX容器的CT ID.</p>
+<figure class="highlight txt"><table><tr><td class="code"><pre><span class="line">lxc.hook.autodev = sh -c &quot;modprobe tun&quot; </span><br><span class="line">lxc.mount.entry=/dev/net/tun /var/lib/lxc/XXX/rootfs/dev/net/tun none bind,create=file</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重启LXC容器，就可以正常安装使用ZeroTier了</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">pct reboot 101</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><h3 id="特权容器"><a href="#特权容器" class="headerlink" title="特权容器"></a>特权容器</h3><p>这个还没有试过，等试过再更新。</p>
+</li>
+</ul>
+<p>参考链接：<a href="https://www.cnblogs.com/lynetwork/articles/17271495.html">https://www.cnblogs.com/lynetwork/articles/17271495.html</a></p>
+]]></content>
+      <categories>
+        <category>虚拟化</category>
+      </categories>
+      <tags>
+        <tag>LCX</tag>
+        <tag>PVE</tag>
+        <tag>TUN</tag>
+        <tag>ZeroTier</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Spark collect方法分析-Driver端</title>
     <url>/2023/12/12/Spark%20collect%E6%96%B9%E6%B3%95%E5%88%86%E6%9E%90-Driver%E7%AB%AF/</url>
     <content><![CDATA[<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>​	在Spark框架中，理解用户代码是怎么被框架执行的，有助于我们写出高效高质量的代码，也有利于我们在问题分析时可以快速准确的定位问题。</p>

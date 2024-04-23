@@ -20,17 +20,23 @@
     var CONFIG = {"hostname":"www.wfanming.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":10,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Duncan&#39;s Blog">
-<meta property="og:url" content="https://www.wfanming.top/tags/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/index.html">
+  <meta name="description" content="PVE8.0下为LCX添加TUN接口背景家里有台老笔记本最近安装了PVE，做ALL IN ONE测试。我希望在不同的机器上都可以使用copilot-service提供的服务。但是无奈没有一个稳定的公网IP，因此只能退而求其次，使用ZeroTier来做内网穿透服务。ZeroTier是通过绑定 &#x2F;dev&#x2F;net&#x2F;tun 这个tun接口来进行组网的，然鹅，PVE下使用CT创">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PVE8.0下为LCX添加TUN接口">
+<meta property="og:url" content="https://www.wfanming.top/2024/04/23/PVE%E4%B8%8B%E4%B8%BALCX%E6%B7%BB%E5%8A%A0TUN%E6%8E%A5%E5%8F%A3/index.html">
 <meta property="og:site_name" content="Duncan&#39;s Blog">
-<meta property="og:description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
+<meta property="og:description" content="PVE8.0下为LCX添加TUN接口背景家里有台老笔记本最近安装了PVE，做ALL IN ONE测试。我希望在不同的机器上都可以使用copilot-service提供的服务。但是无奈没有一个稳定的公网IP，因此只能退而求其次，使用ZeroTier来做内网穿透服务。ZeroTier是通过绑定 &#x2F;dev&#x2F;net&#x2F;tun 这个tun接口来进行组网的，然鹅，PVE下使用CT创">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-04-23T03:49:18.302Z">
+<meta property="article:modified_time" content="2024-04-23T03:49:18.302Z">
 <meta property="article:author" content="Wang Fanming">
+<meta property="article:tag" content="LCX">
+<meta property="article:tag" content="PVE">
+<meta property="article:tag" content="TUN">
+<meta property="article:tag" content="ZeroTier">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://www.wfanming.top/tags/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/">
+<link rel="canonical" href="https://www.wfanming.top/2024/04/23/PVE%E4%B8%8B%E4%B8%BALCX%E6%B7%BB%E5%8A%A0TUN%E6%8E%A5%E5%8F%A3/">
 
 
 <script id="page-configurations">
@@ -38,12 +44,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>标签: 分库分表 | Duncan's Blog</title>
+  <title>PVE8.0下为LCX添加TUN接口 | Duncan's Blog</title>
   
 
 
@@ -182,51 +188,123 @@
         <div class="content-wrap">
           
 
-          <div class="content tag">
+          <div class="content post posts-expand">
             
 
+    
   
   
-  
-  <div class="post-block">
-    <div class="posts-collapse">
-      <div class="collection-title">
-        <h2 class="collection-header">分库分表
-          <small>标签</small>
-        </h2>
-      </div>
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2024/04/23/PVE%E4%B8%8B%E4%B8%BALCX%E6%B7%BB%E5%8A%A0TUN%E6%8E%A5%E5%8F%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Wang Fanming">
+      <meta itemprop="description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Duncan's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PVE8.0下为LCX添加TUN接口
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-04-23 11:49:18" itemprop="dateCreated datePublished" datetime="2024-04-23T11:49:18+08:00">2024-04-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%99%9A%E6%8B%9F%E5%8C%96/" itemprop="url" rel="index"><span itemprop="name">虚拟化</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>538</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-    <div class="collection-year">
-      <span class="collection-header">2019</span>
+        <h1 id="PVE8-0下为LCX添加TUN接口"><a href="#PVE8-0下为LCX添加TUN接口" class="headerlink" title="PVE8.0下为LCX添加TUN接口"></a>PVE8.0下为LCX添加TUN接口</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>家里有台老笔记本最近安装了PVE，做ALL IN ONE测试。我希望在不同的机器上都可以使用copilot-service提供的服务。但是无奈没有一个稳定的公网IP，因此只能退而求其次，使用ZeroTier来做内网穿透服务。ZeroTier是通过绑定 &#x2F;dev&#x2F;net&#x2F;tun 这个tun接口来进行组网的，然鹅，PVE下使用CT创建的LXC默认都没有这个接口，因此需要为它添加这个接口。</p>
+<span id="more"></span>
+
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><ul>
+<li><h3 id="无特权容器"><a href="#无特权容器" class="headerlink" title="无特权容器"></a>无特权容器</h3><ul>
+<li><p>修改pve主机（宿主机）的<code>/etc/pve/nodes/pve/lxc/101.conf</code>，101为LCX容器的CT ID.</p>
+<figure class="highlight txt"><table><tr><td class="code"><pre><span class="line">lxc.hook.autodev = sh -c &quot;modprobe tun&quot; </span><br><span class="line">lxc.mount.entry=/dev/net/tun /var/lib/lxc/XXX/rootfs/dev/net/tun none bind,create=file</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重启LXC容器，就可以正常安装使用ZeroTier了</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">pct reboot 101</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><h3 id="特权容器"><a href="#特权容器" class="headerlink" title="特权容器"></a>特权容器</h3><p>这个还没有试过，等试过再更新。</p>
+</li>
+</ul>
+<p>参考链接：<a target="_blank" rel="noopener" href="https://www.cnblogs.com/lynetwork/articles/17271495.html">https://www.cnblogs.com/lynetwork/articles/17271495.html</a></p>
+
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+    
+    
+    
 
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2019-03-28T10:43:32+08:00"
-              content="2019-03-28">
-          03-28
-        </time>
-      </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LCX/" rel="tag"># LCX</a>
+              <a href="/tags/PVE/" rel="tag"># PVE</a>
+              <a href="/tags/TUN/" rel="tag"># TUN</a>
+              <a href="/tags/ZeroTier/" rel="tag"># ZeroTier</a>
+          </div>
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2019/03/28/MyCat%E5%88%86%E7%89%87/" itemprop="url">
-            <span itemprop="name">MyCat分片</span>
-          </a>
-      </div>
+        
 
-    </header>
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/12/12/Spark%20collect%E6%96%B9%E6%B3%95%E5%88%86%E6%9E%90-Driver%E7%AB%AF/" rel="prev" title="Spark collect方法分析-Driver端">
+      <i class="fa fa-chevron-left"></i> Spark collect方法分析-Driver端
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/04/23/PVE%E4%B8%8BLCX%E8%BF%90%E8%A1%8Ccopilot-gpt4-service/" rel="next" title="LCX中运行copilot-service">
+      LCX中运行copilot-service <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
   </article>
-
-    </div>
-  </div>
   
   
-  
-
   
 
 
@@ -279,6 +357,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#PVE8-0%E4%B8%8B%E4%B8%BALCX%E6%B7%BB%E5%8A%A0TUN%E6%8E%A5%E5%8F%A3"><span class="nav-number">1.</span> <span class="nav-text">PVE8.0下为LCX添加TUN接口</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.2.</span> <span class="nav-text">解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A0%E7%89%B9%E6%9D%83%E5%AE%B9%E5%99%A8"><span class="nav-number">1.2.1.</span> <span class="nav-text">无特权容器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E6%9D%83%E5%AE%B9%E5%99%A8"><span class="nav-number">1.2.2.</span> <span class="nav-text">特权容器</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
