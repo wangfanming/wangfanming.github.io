@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.wfanming.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":10,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介​	在Spark框架中，理解用户代码是怎么被框架执行的，有助于我们写出高效高质量的代码，也有利于我们在问题分析时可以快速准确的定位问题。 ​	collect方法作为一个简单的方法，其执行过程也足以展示整个框架的执行流程。 目的​	通过对调用过程的分析，深入理解整个框架的计算过程，从根本上理解程序的执行逻辑。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spark collect方法分析-Executor端">
+<meta property="og:url" content="https://www.wfanming.top/2023/12/17/Spark-collect%E6%96%B9%E6%B3%95%E5%88%86%E6%9E%90-Executor%E7%AB%AF/index.html">
+<meta property="og:site_name" content="Duncan&#39;s Blog">
+<meta property="og:description" content="简介​	在Spark框架中，理解用户代码是怎么被框架执行的，有助于我们写出高效高质量的代码，也有利于我们在问题分析时可以快速准确的定位问题。 ​	collect方法作为一个简单的方法，其执行过程也足以展示整个框架的执行流程。 目的​	通过对调用过程的分析，深入理解整个框架的计算过程，从根本上理解程序的执行逻辑。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-12-17T07:21:04.000Z">
+<meta property="article:modified_time" content="2024-05-15T13:46:17.911Z">
+<meta property="article:author" content="Wang Fanming">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.wfanming.top/2023/12/17/Spark-collect%E6%96%B9%E6%B3%95%E5%88%86%E6%9E%90-Executor%E7%AB%AF/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Spark collect方法分析-Executor端 | Duncan's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Duncan's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">何以解忧，唯有学习</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/wangfanming" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.wfanming.top/2023/12/17/Spark-collect%E6%96%B9%E6%B3%95%E5%88%86%E6%9E%90-Executor%E7%AB%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Wang Fanming">
+      <meta itemprop="description" content="吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Duncan's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spark collect方法分析-Executor端
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-12-17 15:21:04" itemprop="dateCreated datePublished" datetime="2023-12-17T15:21:04+08:00">2023-12-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-05-15 21:46:17" itemprop="dateModified" datetime="2024-05-15T21:46:17+08:00">2024-05-15</time>
+              </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>9.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>9 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>​	在Spark框架中，理解用户代码是怎么被框架执行的，有助于我们写出高效高质量的代码，也有利于我们在问题分析时可以快速准确的定位问题。</p>
+<p>​	collect方法作为一个简单的方法，其执行过程也足以展示整个框架的执行流程。</p>
+<h2 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h2><p>​	通过对调用过程的分析，深入理解整个框架的计算过程，从根本上理解程序的执行逻辑。</p>
+<span id="more"></span>
+
+<h2 id="流程分析"><a href="#流程分析" class="headerlink" title="流程分析"></a>流程分析</h2><p>​	在上文（collect方法的Driver端分析）中，</p>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line">taskScheduler.submitTasks(<span class="keyword">new</span> <span class="type">TaskSet</span>(</span><br><span class="line">      tasks.toArray, stage.id, stage.latestInfo.attemptNumber, jobId, properties))</span><br></pre></td></tr></table></figure>
+
+<p>被DAGscheduler构建出来的TaskSet，会由taskScheduler进行调度执行。接下来，我们针对后续流程进行跟踪分析。</p>
+<ul>
+<li><p>提交后的流程分析</p>
+<ul>
+<li><p>org.apache.spark.scheduler.TaskSchedulerImpl#submitTasks</p>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">submitTasks</span></span>(taskSet: <span class="type">TaskSet</span>) &#123;</span><br><span class="line">  <span class="keyword">val</span> tasks = taskSet.tasks</span><br><span class="line">  logInfo(<span class="string">&quot;Adding task set &quot;</span> + taskSet.id + <span class="string">&quot; with &quot;</span> + tasks.length + <span class="string">&quot; tasks&quot;</span>)</span><br><span class="line">  <span class="keyword">this</span>.synchronized &#123;</span><br><span class="line">    <span class="comment">// 组合模式，创建TaskSetManager，将TaskSet托管给TaskSetManager，也就是说每个TaskSet有一个TaskSetManager</span></span><br><span class="line">    <span class="keyword">val</span> manager = createTaskSetManager(taskSet, maxTaskFailures)</span><br><span class="line">    <span class="keyword">val</span> stage = taskSet.stageId</span><br><span class="line">    <span class="keyword">val</span> stageTaskSets =</span><br><span class="line">      taskSetsByStageIdAndAttempt.getOrElseUpdate(stage, <span class="keyword">new</span> <span class="type">HashMap</span>[<span class="type">Int</span>, <span class="type">TaskSetManager</span>])</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Mark all the existing TaskSetManagers of this stage as zombie, as we are adding a new one.</span></span><br><span class="line">    <span class="comment">// This is necessary to handle a corner case. Let&#x27;s say a stage has 10 partitions and has 2</span></span><br><span class="line">    <span class="comment">// TaskSetManagers: TSM1(zombie) and TSM2(active). TSM1 has a running task for partition 10</span></span><br><span class="line">    <span class="comment">// and it completes. TSM2 finishes tasks for partition 1-9, and thinks he is still active</span></span><br><span class="line">    <span class="comment">// because partition 10 is not completed yet. However, DAGScheduler gets task completion</span></span><br><span class="line">    <span class="comment">// events for all the 10 partitions and thinks the stage is finished. If it&#x27;s a shuffle stage</span></span><br><span class="line">    <span class="comment">// and somehow it has missing map outputs, then DAGScheduler will resubmit it and create a</span></span><br><span class="line">    <span class="comment">// TSM3 for it. As a stage can&#x27;t have more than one active task set managers, we must mark</span></span><br><span class="line">    <span class="comment">// TSM2 as zombie (it actually is).</span></span><br><span class="line">    stageTaskSets.foreach &#123; <span class="keyword">case</span> (_, ts) =&gt;</span><br><span class="line">      ts.isZombie = <span class="literal">true</span></span><br><span class="line">    &#125;</span><br><span class="line">    stageTaskSets(taskSet.stageAttemptId) = manager</span><br><span class="line">    <span class="comment">// schedulableBuilder 会在org.apache.spark.scheduler.TaskSchedulerImpl.initialize()时进行初始化，</span></span><br><span class="line">    <span class="comment">// 该配置由“spark.scheduler.mode”的具体配置决定，默认FIFO调度策略</span></span><br><span class="line">    <span class="comment">// 根据配置，采用不同的调度策略执行TaskSet</span></span><br><span class="line">    schedulableBuilder.addTaskSetManager(manager, manager.taskSet.properties)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (!isLocal &amp;&amp; !hasReceivedTask) &#123;</span><br><span class="line">      starvationTimer.scheduleAtFixedRate(<span class="keyword">new</span> <span class="type">TimerTask</span>() &#123;</span><br><span class="line">        <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">run</span></span>() &#123;</span><br><span class="line">          <span class="keyword">if</span> (!hasLaunchedTask) &#123;</span><br><span class="line">            logWarning(<span class="string">&quot;Initial job has not accepted any resources; &quot;</span> +</span><br><span class="line">              <span class="string">&quot;check your cluster UI to ensure that workers are registered &quot;</span> +</span><br><span class="line">              <span class="string">&quot;and have sufficient resources&quot;</span>)</span><br><span class="line">          &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">this</span>.cancel()</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;, <span class="type">STARVATION_TIMEOUT_MS</span>, <span class="type">STARVATION_TIMEOUT_MS</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    hasReceivedTask = <span class="literal">true</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// backend:在org.apache.spark.SparkContext.createTaskScheduler()时，根据具体配置，会生成相应的后端，</span></span><br><span class="line">  <span class="comment">// 这些后端都是CoarseGrainedSchedulerBackend的子接口的YarnSchedulerBackend的实现</span></span><br><span class="line">  <span class="comment">// 这根具体的部署模式（cluser,client）相关,然后由相应的后端程序开始制作票据，交由Executor进行TaskSet的处理</span></span><br><span class="line">  backend.reviveOffers()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在org.apache.spark.scheduler.cluster.CoarseGrainedSchedulerBackend#reviveOffers方法中，由driver发出ReviveOffers事件：</p>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">reviveOffers</span></span>() &#123;</span><br><span class="line">    <span class="comment">//向DriverEndpoint发送ReviveOffers事件</span></span><br><span class="line">    driverEndpoint.send(<span class="type">ReviveOffers</span>)</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>该事件被org.apache.spark.scheduler.cluster.CoarseGrainedSchedulerBackend.DriverEndpoint#receive接收后，所有已经在yarn上启动的Executor开始制作票据</p>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">makeOffers</span></span>() &#123;</span><br><span class="line">      <span class="comment">// Make sure no executor is killed while some task is launching on it</span></span><br><span class="line">      <span class="keyword">val</span> taskDescs = withLock &#123;</span><br><span class="line">        <span class="comment">// Filter out executors under killing</span></span><br><span class="line">        <span class="keyword">val</span> activeExecutors = executorDataMap.filterKeys(executorIsAlive)</span><br><span class="line">        <span class="keyword">val</span> workOffers = activeExecutors.map &#123;</span><br><span class="line">          <span class="keyword">case</span> (id, executorData) =&gt;</span><br><span class="line">            <span class="keyword">new</span> <span class="type">WorkerOffer</span>(id, executorData.executorHost, executorData.freeCores,</span><br><span class="line">              <span class="type">Some</span>(executorData.executorAddress.hostPort))</span><br><span class="line">        &#125;.toIndexedSeq</span><br><span class="line">        <span class="comment">// 把可以执行任务的Executors告诉TaskScheduler，开始执行Task</span></span><br><span class="line">        scheduler.resourceOffers(workOffers)</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (!taskDescs.isEmpty) &#123;</span><br><span class="line">        <span class="comment">// 向Executor发出执行Task的事件</span></span><br><span class="line">        launchTasks(taskDescs)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;			</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在票据制作过程中，检测所有正常的Executor,并将TaskSet分配给他们进行执行</p>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">launchTasks</span></span>(tasks: <span class="type">Seq</span>[<span class="type">Seq</span>[<span class="type">TaskDescription</span>]]) &#123;</span><br><span class="line">      <span class="keyword">for</span> (task &lt;- tasks.flatten) &#123;</span><br><span class="line">        <span class="keyword">val</span> serializedTask = <span class="type">TaskDescription</span>.encode(task)</span><br><span class="line">        <span class="keyword">if</span> (serializedTask.limit() &gt;= maxRpcMessageSize) &#123;</span><br><span class="line">          <span class="type">Option</span>(scheduler.taskIdToTaskSetManager.get(task.taskId)).foreach &#123; taskSetMgr =&gt;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">              <span class="keyword">var</span> msg = <span class="string">&quot;Serialized task %s:%d was %d bytes, which exceeds max allowed: &quot;</span> +</span><br><span class="line">                <span class="string">&quot;spark.rpc.message.maxSize (%d bytes). Consider increasing &quot;</span> +</span><br><span class="line">                <span class="string">&quot;spark.rpc.message.maxSize or using broadcast variables for large values.&quot;</span></span><br><span class="line">              msg = msg.format(task.taskId, task.index, serializedTask.limit(), maxRpcMessageSize)</span><br><span class="line">              taskSetMgr.abort(msg)</span><br><span class="line">            &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">              <span class="keyword">case</span> e: <span class="type">Exception</span> =&gt; logError(<span class="string">&quot;Exception in error callback&quot;</span>, e)</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="comment">//executorDataMap在Driver-&gt;SparkSession-&gt;SparkContext-&gt;SparkEnv初始化的时候创建，里面存储了每个Executor的信息</span></span><br><span class="line">          <span class="comment">//task中包含有分区的最佳位置信息，根据这个信息，找到最佳的Executor</span></span><br><span class="line">          <span class="keyword">val</span> executorData = executorDataMap(task.executorId)</span><br><span class="line">          executorData.freeCores -= scheduler.<span class="type">CPUS_PER_TASK</span></span><br><span class="line"></span><br><span class="line">          logDebug(<span class="string">s&quot;Launching task <span class="subst">$&#123;task.taskId&#125;</span> on executor id: <span class="subst">$&#123;task.executorId&#125;</span> hostname: &quot;</span> +</span><br><span class="line">            <span class="string">s&quot;<span class="subst">$&#123;executorData.executorHost&#125;</span>.&quot;</span>)</span><br><span class="line">          <span class="comment">// 使用选定的Executor的executorEndpoint发出LaunchTask，在这个Executor上启动task的处理</span></span><br><span class="line">          executorData.executorEndpoint.send(<span class="type">LaunchTask</span>(<span class="keyword">new</span> <span class="type">SerializableBuffer</span>(serializedTask)))</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在Executor的org.apache.spark.executor.CoarseGrainedExecutorBackend#receive中，LaunchTask事件会被处理。</p>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">receive</span></span>: <span class="type">PartialFunction</span>[<span class="type">Any</span>, <span class="type">Unit</span>] = &#123;</span><br><span class="line">   <span class="keyword">case</span> <span class="type">RegisteredExecutor</span> =&gt;</span><br><span class="line">     logInfo(<span class="string">&quot;Successfully registered with driver&quot;</span>)</span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">     <span class="comment">//向Driver注册成功后,创建Executor</span></span><br><span class="line">       executor = <span class="keyword">new</span> <span class="type">Executor</span>(executorId, hostname, env, userClassPath, isLocal = <span class="literal">false</span>)</span><br><span class="line">     &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">       <span class="keyword">case</span> <span class="type">NonFatal</span>(e) =&gt;</span><br><span class="line">         exitExecutor(<span class="number">1</span>, <span class="string">&quot;Unable to create executor due to &quot;</span> + e.getMessage, e)</span><br><span class="line">     &#125;</span><br><span class="line">   <span class="comment">// 接收LaunchTask中的TaskSet,进行处理</span></span><br><span class="line">   <span class="keyword">case</span> <span class="type">LaunchTask</span>(data) =&gt;</span><br><span class="line">     <span class="keyword">if</span> (executor == <span class="literal">null</span>) &#123;</span><br><span class="line">       exitExecutor(<span class="number">1</span>, <span class="string">&quot;Received LaunchTask command but executor was null&quot;</span>)</span><br><span class="line">     &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">       <span class="keyword">val</span> taskDesc = <span class="type">TaskDescription</span>.decode(data.value)</span><br><span class="line">       logInfo(<span class="string">&quot;Got assigned task &quot;</span> + taskDesc.taskId)</span><br><span class="line">       executor.launchTask(<span class="keyword">this</span>, taskDesc)</span><br><span class="line">     &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在org.apache.spark.executor.Executor#launchTask中，会将TaskSet放入线程池进行处理</p>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">launchTask</span></span>(context: <span class="type">ExecutorBackend</span>, taskDescription: <span class="type">TaskDescription</span>): <span class="type">Unit</span> = &#123;</span><br><span class="line">    <span class="keyword">val</span> tr = <span class="keyword">new</span> <span class="type">TaskRunner</span>(context, taskDescription)</span><br><span class="line">    runningTasks.put(taskDescription.taskId, tr)</span><br><span class="line">    threadPool.execute(tr)</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在org.apache.spark.executor.Executor.TaskRunner#run中</p>
+<ol>
+<li><p>会对taskDescription进行反序列化为Task对象，具体的计算过程在org.apache.spark.scheduler.Task#run完成。</p>
+<ul>
+<li><p>在org.apache.spark.scheduler.Task#run中，生成任务的上下文对象，并在org.apache.spark.scheduler.Task#runTask中进行计算。</p>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line">  <span class="keyword">final</span> <span class="function"><span class="keyword">def</span> <span class="title">run</span></span>(</span><br><span class="line">      taskAttemptId: <span class="type">Long</span>,</span><br><span class="line">      attemptNumber: <span class="type">Int</span>,</span><br><span class="line">      metricsSystem: <span class="type">MetricsSystem</span>): <span class="type">T</span> = &#123;</span><br><span class="line">    <span class="type">SparkEnv</span>.get.blockManager.registerTask(taskAttemptId)</span><br><span class="line">    <span class="comment">// TODO SPARK-24874 Allow create BarrierTaskContext based on partitions, instead of whether</span></span><br><span class="line">    <span class="comment">// the stage is barrier.</span></span><br><span class="line">    <span class="keyword">val</span> taskContext = <span class="keyword">new</span> <span class="type">TaskContextImpl</span>(</span><br><span class="line">      stageId,</span><br><span class="line">      stageAttemptId, <span class="comment">// stageAttemptId and stageAttemptNumber are semantically equal</span></span><br><span class="line">      partitionId,</span><br><span class="line">      taskAttemptId,</span><br><span class="line">      attemptNumber,</span><br><span class="line">      taskMemoryManager,</span><br><span class="line">      localProperties,</span><br><span class="line">      metricsSystem,</span><br><span class="line">      metrics)</span><br><span class="line">....</span><br><span class="line">    <span class="keyword">new</span> <span class="type">CallerContext</span>(</span><br><span class="line">      <span class="string">&quot;TASK&quot;</span>,</span><br><span class="line">      <span class="type">SparkEnv</span>.get.conf.get(<span class="type">APP_CALLER_CONTEXT</span>),</span><br><span class="line">      appId,</span><br><span class="line">      appAttemptId,</span><br><span class="line">      jobId,</span><br><span class="line">      <span class="type">Option</span>(stageId),</span><br><span class="line">      <span class="type">Option</span>(stageAttemptId),</span><br><span class="line">      <span class="type">Option</span>(taskAttemptId),</span><br><span class="line">      <span class="type">Option</span>(attemptNumber)).setCurrentContext()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      runTask(context)</span><br><span class="line">    &#125; <span class="keyword">catch</span> &#123; ...</span><br></pre></td></tr></table></figure>
+
+<p>Task根据Stage种类，分为org.apache.spark.scheduler.ResultTask和org.apache.spark.scheduler.ShuffleMapTask。</p>
+<ul>
+<li>在org.apache.spark.scheduler.ShuffleMapTask#runTask中</li>
+</ul>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">runTask</span></span>(context: <span class="type">TaskContext</span>): <span class="type">MapStatus</span> = &#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">val</span> ser = <span class="type">SparkEnv</span>.get.closureSerializer.newInstance()</span><br><span class="line">    <span class="keyword">val</span> (rdd, dep) = ser.deserialize[(<span class="type">RDD</span>[_], <span class="type">ShuffleDependency</span>[_, _, _])](</span><br><span class="line">      <span class="type">ByteBuffer</span>.wrap(taskBinary.value), <span class="type">Thread</span>.currentThread.getContextClassLoader)</span><br><span class="line"><span class="keyword">else</span> <span class="number">0</span>L</span><br><span class="line">...</span><br><span class="line">    <span class="keyword">var</span> writer: <span class="type">ShuffleWriter</span>[<span class="type">Any</span>, <span class="type">Any</span>] = <span class="literal">null</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">val</span> manager = <span class="type">SparkEnv</span>.get.shuffleManager</span><br><span class="line">      writer = manager.getWriter[<span class="type">Any</span>, <span class="type">Any</span>](dep.shuffleHandle, partitionId, context)</span><br><span class="line">      <span class="comment">//按照rdd的转换函数，将rdd的数据转换为Iterator[Product2[K, V]]，并将结果写入writer</span></span><br><span class="line">      writer.write(rdd.iterator(partition, context).asInstanceOf[<span class="type">Iterator</span>[_ &lt;: <span class="type">Product2</span>[<span class="type">Any</span>, <span class="type">Any</span>]]])</span><br><span class="line">      writer.stop(success = <span class="literal">true</span>).get</span><br><span class="line">    &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">      ...</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>在org.apache.spark.scheduler.ResultTask#runTask中：</li>
+</ul>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">runTask</span></span>(context: <span class="type">TaskContext</span>): <span class="type">U</span> = &#123;</span><br><span class="line">    <span class="comment">// Deserialize the RDD and the func using the broadcast variables.</span></span><br><span class="line">    <span class="keyword">val</span> threadMXBean = <span class="type">ManagementFactory</span>.getThreadMXBean</span><br><span class="line">    <span class="keyword">val</span> deserializeStartTime = <span class="type">System</span>.currentTimeMillis()</span><br><span class="line">    <span class="keyword">val</span> deserializeStartCpuTime = <span class="keyword">if</span> (threadMXBean.isCurrentThreadCpuTimeSupported) &#123;</span><br><span class="line">      threadMXBean.getCurrentThreadCpuTime</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="number">0</span>L</span><br><span class="line">    <span class="keyword">val</span> ser = <span class="type">SparkEnv</span>.get.closureSerializer.newInstance()</span><br><span class="line">    <span class="keyword">val</span> (rdd, func) = ser.deserialize[(<span class="type">RDD</span>[<span class="type">T</span>], (<span class="type">TaskContext</span>, <span class="type">Iterator</span>[<span class="type">T</span>]) =&gt; <span class="type">U</span>)](</span><br><span class="line">      <span class="type">ByteBuffer</span>.wrap(taskBinary.value), <span class="type">Thread</span>.currentThread.getContextClassLoader)</span><br><span class="line">    _executorDeserializeTime = <span class="type">System</span>.currentTimeMillis() - deserializeStartTime</span><br><span class="line">    _executorDeserializeCpuTime = <span class="keyword">if</span> (threadMXBean.isCurrentThreadCpuTimeSupported) &#123;</span><br><span class="line">      threadMXBean.getCurrentThreadCpuTime - deserializeStartCpuTime</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="number">0</span>L</span><br><span class="line">	<span class="comment">//使用用户定义的函数func对RDD的partition进行计算</span></span><br><span class="line">    func(context, rdd.iterator(partition, context))</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>该func方法在org.apache.spark.rdd.RDD#collect()就是：</p>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line">(iter: <span class="type">Iterator</span>[<span class="type">T</span>]) =&gt; iter.toArray	</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>最后在Driver端：</li>
+</ul>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line"><span class="type">Array</span>.concat(results: _*)</span><br></pre></td></tr></table></figure>
+
+<p>会将各个分区的数组拼在一起作为最终结果。</p>
+</li>
+</ul>
+</li>
+<li><p>将计算结果进行序列化，如果结果超过了maxDirectResultSize限制，还会生成Block存储，并将信息以StatusUpdate事件通报给Driver。</p>
+<ul>
+<li><p>在org.apache.spark.scheduler.cluster.CoarseGrainedSchedulerBackend.DriverEndpoint#receive中，接收到StatusUpdate后即可对后续的TaskSet进行展开。通过计算各个任务的本地性，依据最佳本地性按顺序进行任务调度。</p>
+<figure class="highlight scala"><table><tr><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">receive</span></span>: <span class="type">PartialFunction</span>[<span class="type">Any</span>, <span class="type">Unit</span>] = &#123;</span><br><span class="line">     <span class="keyword">case</span> <span class="type">StatusUpdate</span>(executorId, taskId, state, data) =&gt;</span><br><span class="line">       scheduler.statusUpdate(taskId, state, data.value)</span><br><span class="line">       <span class="keyword">if</span> (<span class="type">TaskState</span>.isFinished(state)) &#123;</span><br><span class="line">         executorDataMap.get(executorId) <span class="keyword">match</span> &#123;</span><br><span class="line">           <span class="keyword">case</span> <span class="type">Some</span>(executorInfo) =&gt;</span><br><span class="line">             executorInfo.freeCores += scheduler.<span class="type">CPUS_PER_TASK</span></span><br><span class="line">             <span class="comment">//根据已经完成的Task,根据其所在Executor的ID，通过计算任务本地性，重新调度任务</span></span><br><span class="line">             makeOffers(executorId)</span><br><span class="line">           <span class="keyword">case</span> <span class="type">None</span> =&gt;</span><br><span class="line">             <span class="comment">// Ignoring the update since we don&#x27;t know about the executor.</span></span><br><span class="line">             logWarning(<span class="string">s&quot;Ignored task status update (<span class="subst">$taskId</span> state <span class="subst">$state</span>) &quot;</span> +</span><br><span class="line">               <span class="string">s&quot;from unknown executor with ID <span class="subst">$executorId</span>&quot;</span>)</span><br><span class="line">         &#125;</span><br><span class="line">       &#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>更新度量系统的数据，用于展示任务执行信息。</p>
+</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>上述大致整理出了Stage划分后，TaskSet在Executor中的调度执行流程。但是其中隐藏了很多细节，如本地性计算过程、调度策略、各个组件是如何初始化、如何进行通信的。具体信息需要查看这个流程中相关方法栈进行分析。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/12/12/Spark%20collect%E6%96%B9%E6%B3%95%E5%88%86%E6%9E%90-Driver%E7%AB%AF/" rel="prev" title="Spark collect方法分析-Driver端">
+      <i class="fa fa-chevron-left"></i> Spark collect方法分析-Driver端
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/05/15/PVE%E4%B8%8B%E4%B8%BALCX%E6%B7%BB%E5%8A%A0TUN%E6%8E%A5%E5%8F%A3/" rel="next" title="PVE8.0下为LCX添加TUN接口">
+      PVE8.0下为LCX添加TUN接口 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E7%9A%84"><span class="nav-number">2.</span> <span class="nav-text">目的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">流程分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.1.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Wang Fanming</p>
+  <div class="site-description" itemprop="description">吾生也有涯，而知也无涯，以有涯随无涯，殆己！已而为知者，殆而已矣。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">23</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wangfanming" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wangfanming" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/wangfanming1204@gmail.com" title="E-Mail → wangfanming1204@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Wang Fanming</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">119k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">1:48</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
